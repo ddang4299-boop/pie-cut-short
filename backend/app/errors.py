@@ -65,6 +65,31 @@ VARIABLE_FRAME_RATE = _register("VARIABLE_FRAME_RATE", I)
 SOURCE_ALREADY_VERTICAL = _register("SOURCE_ALREADY_VERTICAL", I)
 VERY_LONG_VIDEO = _register("VERY_LONG_VIDEO", I, 400, ("hours",))
 
+# --- Import (Phase 1) -----------------------------------------------------
+UNSUPPORTED_FILE_TYPE = _register("UNSUPPORTED_FILE_TYPE", E, 415, ("name",))
+INVALID_LOCATION = _register("INVALID_LOCATION", E, 400)
+UPLOAD_FAILED = _register("UPLOAD_FAILED", E, 400)
+DOWNLOAD_FAILED = _register("DOWNLOAD_FAILED", E, 502, ("detail",))
+DISK_FULL = _register("DISK_FULL", E, 507)
+
+# --- Sources / jobs -------------------------------------------------------
+SOURCE_NOT_FOUND = _register("SOURCE_NOT_FOUND", E, 404)
+SOURCE_BUSY = _register("SOURCE_BUSY", E, 409)
+SOURCE_NOT_STARTABLE = _register("SOURCE_NOT_STARTABLE", E, 409)
+INVALID_STEP = _register("INVALID_STEP", E, 400, ("step",))
+JOB_NOT_FOUND = _register("JOB_NOT_FOUND", E, 404)
+JOB_CANCELLED = _register("JOB_CANCELLED", I)
+JOB_FAILED = _register("JOB_FAILED", E, 500)
+STEP_NOT_AVAILABLE = _register("STEP_NOT_AVAILABLE", I)  # step arrives in a later build
+
+# --- Proxy / transcription ------------------------------------------------
+PROXY_FAILED = _register("PROXY_FAILED", E, 500)
+TRANSCRIBE_FAILED = _register("TRANSCRIBE_FAILED", E, 500, ("detail",))
+TRANSCRIBE_SKIPPED_NO_AUDIO = _register("TRANSCRIBE_SKIPPED_NO_AUDIO", I)
+TRANSCRIPT_NOT_READY = _register("TRANSCRIPT_NOT_READY", E, 404)
+NO_SPEECH_FOUND = _register("NO_SPEECH_FOUND", W)
+TRANSCRIBE_CPU_FALLBACK = _register("TRANSCRIBE_CPU_FALLBACK", W)
+
 del E, W, I
 
 

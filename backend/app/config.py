@@ -21,16 +21,29 @@ class Settings(BaseSettings):
     ollama_model: str = "llama3.1"
     ollama_host: str = "http://127.0.0.1:11434"
     whisper_model: str = "large-v3"
+    whisper_models_dir: Path = Path("data/models")  # faster-whisper downloads models here
     device: str = "auto"  # auto | cuda | mps | cpu
     data_dir: Path = Path("data")
     ffmpeg_bin: str = "ffmpeg"
     ffprobe_bin: str = "ffprobe"
+    start_job_workers: bool = True  # tests switch this off and drive the queue by hand
+
+    @staticmethod
+    def _abs(path: Path) -> Path:
+        return path if path.is_absolute() else REPO_ROOT / path
 
     @property
     def data_path(self) -> Path:
         """Absolute data directory (relative paths are resolved from the repo root)."""
-        path = self.data_dir if self.data_dir.is_absolute() else REPO_ROOT / self.data_dir
-        return path
+        return self._abs(self.data_dir)
+
+    @property
+    def models_path(self) -> Path:
+        return self._abs(self.whisper_models_dir)
+
+    @property
+    def db_path(self) -> Path:
+        return self.data_path / "shortforge.db"
 
 
 @lru_cache

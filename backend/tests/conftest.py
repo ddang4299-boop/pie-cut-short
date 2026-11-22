@@ -23,3 +23,31 @@ def make_media(path: Path, *, video: bool = True, audio: bool = True, seconds: f
     cmd.append(str(path))
     subprocess.run(cmd, check=True, capture_output=True)
     return path
+
+
+@pytest.fixture
+def app_env(tmp_path, monkeypatch):
+    """Isolated data dir + DB for each test; job workers off (tests drive the queue)."""
+    from app import db
+    from app.config import get_settings
+
+    data = tmp_path / "data"
+    monkeypatch.setenv("DATA_DIR", str(data))
+    monkeypatch.setenv("START_JOB_WORKERS", "false")
+    monkeypatch.setenv("WHISPER_MODEL", "tiny")
+    get_settings.cache_clear()
+    db.init_db(get_settings().db_path)
+    yield data
+    get_settings.cache_clear()
+    db.dispose()
+
+
+@pytest.fixture
+def queue(app_env):
+    from app import jobs, tasks
+
+    q = jobs.JobQueue(app_env)
+    tasks.register_handlers(q)
+    jobs.set_queue(q)
+    yield q
+    jobs.set_queue(None)
