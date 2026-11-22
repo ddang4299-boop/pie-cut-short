@@ -1,0 +1,14 @@
+# Backend dependencies (Python 3.11+; developed on 3.14).
+# Install:  python -m venv .venv  &&  .venv\Scripts\pip install -r requirements.txt
+# Later phases add media/ML packages (faster-whisper, scenedetect, mediapipe, ...).
+
+# --- API ---
+fastapi>=0.165,<1
+uvicorn[standard]>=0.54
+pydantic>=2.14,<3
+pydantic-settings>=2.16,<3
+python-dotenv>=1.2
+
+# --- Tests ---
+pytest>=9.2
+httpx2>=2.16  # used by FastAPI's TestClient

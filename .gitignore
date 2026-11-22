@@ -1,0 +1,35 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/smoke-output/
+remotion/out/
+
+# App data (media, cache, output)
+data/
+
+# Sample media (generate with scripts/make_sample.py or drop your own)
+samples/*
+!samples/README.md
+!samples/fixtures/
+
+# Autopilot logs (local only)
+.autopilot/*.log
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
