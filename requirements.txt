@@ -1,6 +1,5 @@
 # Backend dependencies (Python 3.11+; developed on 3.14).
 # Install:  python -m venv .venv  &&  .venv\Scripts\pip install -r requirements.txt
-# Later phases add more media/ML packages (scenedetect, mediapipe, ...).
 
 # --- API ---
 fastapi>=0.165,<1
@@ -18,6 +17,15 @@ faster-whisper>=1.2.1       # word-level transcription (pulls ctranslate2 + av)
 # CUDA runtime DLLs for ctranslate2 on NVIDIA GPUs (no system CUDA install needed).
 nvidia-cublas-cu12>=12.9 ; sys_platform == "win32" or sys_platform == "linux"
 nvidia-cudnn-cu12>=9.10,<10 ; sys_platform == "win32" or sys_platform == "linux"
+
+# --- Analysis (Phase 2) ---
+numpy>=2.5
+scenedetect>=0.7.3          # scene cuts (uses OpenCV)
+mediapipe>=1.2.3            # face detection (pulls opencv-contrib-python)
+opencv-contrib-python>=5.1  # frames, motion, Haar fallback (same package mediapipe needs)
+
+# --- Moment selection LLMs (optional providers) ---
+anthropic>=2.12             # provider "anthropic" (official SDK); openai/ollama use plain HTTP
 
 # --- Tests ---
 pytest>=9.2

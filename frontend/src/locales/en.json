@@ -218,7 +218,16 @@
     "TRANSCRIBE_SKIPPED_NO_AUDIO": "No audio track, so transcription was skipped.",
     "TRANSCRIPT_NOT_READY": "The transcript isn't ready yet.",
     "NO_SPEECH_FOUND": "No speech was found. You can still add moments by hand.",
-    "TRANSCRIBE_CPU_FALLBACK": "The GPU couldn't be used for transcription, so the CPU was used (slower)."
+    "TRANSCRIBE_CPU_FALLBACK": "The GPU couldn't be used for transcription, so the CPU was used (slower).",
+    "ANALYZE_FAILED": "Analysis failed: {{detail}}",
+    "CONTENT_TYPE_FAILED": "Couldn't detect the content type automatically. Pick it on the card.",
+    "MOMENTS_SKIPPED_NO_TRANSCRIPT": "No transcript, so no moments were proposed. You can add moments by hand on the timeline.",
+    "MOMENTS_INVALID": "moments.json is not valid: {{detail}}. Run /find-moments again.",
+    "MOMENTS_PROVIDER_FAILED": "The moment finder ({{provider}}) failed: {{detail}}",
+    "MOMENTS_PROVIDER_NOT_CONFIGURED": "The moment finder “{{provider}}” isn't set up (missing API key or server). Choose another one in Settings.",
+    "MOMENTS_FEWER_THAN_WANTED": "Only {{count}} moments were found. You can add more by hand.",
+    "MOMENT_NOT_FOUND": "This moment no longer exists.",
+    "ANALYSIS_NOT_READY": "The analysis for this video isn't ready yet."
   },
   "steps": {
     "preflight": "Preflight",
@@ -243,14 +252,22 @@
     "extracting_audio": "Extracting audio",
     "decoding_audio": "Decoding audio",
     "loading_model": "Loading the speech model",
-    "transcribing": "Transcribing speech"
+    "transcribing": "Transcribing speech",
+    "reading_audio": "Reading the audio",
+    "loudness": "Measuring loudness",
+    "silences": "Finding silences",
+    "scenes": "Finding scene cuts",
+    "content_type": "Detecting the content type",
+    "proposing": "Choosing moments",
+    "importing": "Loading moments"
   },
   "source_status": {
     "downloading": "Downloading",
     "new": "Ready to start",
     "processing": "Processing",
     "ready": "Ready",
-    "error": "Needs attention"
+    "error": "Needs attention",
+    "waiting": "Waiting for /find-moments"
   },
   "content_type": {
     "talking_head": "Talking head",

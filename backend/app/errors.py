@@ -90,6 +90,17 @@ TRANSCRIPT_NOT_READY = _register("TRANSCRIPT_NOT_READY", E, 404)
 NO_SPEECH_FOUND = _register("NO_SPEECH_FOUND", W)
 TRANSCRIBE_CPU_FALLBACK = _register("TRANSCRIBE_CPU_FALLBACK", W)
 
+# --- Analysis / moments (Phase 2) -----------------------------------------
+ANALYZE_FAILED = _register("ANALYZE_FAILED", E, 500, ("detail",))
+CONTENT_TYPE_FAILED = _register("CONTENT_TYPE_FAILED", W)  # detection failed, defaults used
+MOMENTS_SKIPPED_NO_TRANSCRIPT = _register("MOMENTS_SKIPPED_NO_TRANSCRIPT", I)
+MOMENTS_INVALID = _register("MOMENTS_INVALID", E, 422, ("detail",))
+MOMENTS_PROVIDER_FAILED = _register("MOMENTS_PROVIDER_FAILED", E, 502, ("provider", "detail"))
+MOMENTS_PROVIDER_NOT_CONFIGURED = _register("MOMENTS_PROVIDER_NOT_CONFIGURED", E, 400, ("provider",))
+MOMENTS_FEWER_THAN_WANTED = _register("MOMENTS_FEWER_THAN_WANTED", W, 400, ("count",))
+MOMENT_NOT_FOUND = _register("MOMENT_NOT_FOUND", E, 404)
+ANALYSIS_NOT_READY = _register("ANALYSIS_NOT_READY", E, 404)
+
 del E, W, I
 
 

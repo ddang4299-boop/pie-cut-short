@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 from sqlmodel import col, select
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app import db, errors, jobs, tasks
+from app import db, errors, jobs, moments_service, settings_store, tasks
 from app.config import APP_VERSION, get_settings
 from app.models import (
     JOB_ACTIVE,
@@ -30,6 +30,9 @@ from app.models import (
     SOURCE_NEW,
     SOURCE_PROCESSING,
     SOURCE_READY,
+    SOURCE_WAITING,
+    CONTENT_TYPES,
+    PLATFORMS,
     STEPS,
     Job,
     Source,
@@ -38,7 +41,6 @@ from pipeline import ingest, preflight, transcribe
 
 log = logging.getLogger("shortforge")
 
-CONTENT_TYPES = ("talking_head", "screen_recording", "podcast", "gameplay_facecam")
 UPLOAD_CHUNK = 1024 * 1024
 
 
@@ -52,11 +54,14 @@ async def lifespan(_: FastAPI):
     queue.recover()  # resume jobs interrupted by a crash/close, delete temp files
     tasks.reconcile_sources()  # sources whose job gave up -> error (Retry in the Library)
     jobs.set_queue(queue)
+    watcher = moments_service.ResultWatcher()
     if settings.start_job_workers:
         queue.start()
+        watcher.start()  # imports data/<id>/moments.json written by /find-moments
     try:
         yield
     finally:
+        watcher.stop()
         queue.stop()
         jobs.set_queue(None)
 
@@ -166,7 +171,7 @@ def job_out(job: Job, source_name: str | None = None) -> dict[str, Any]:
     }
 
 
-def source_out(src: Source, active_job: Job | None = None) -> dict[str, Any]:
+def source_out(src: Source, active_job: Job | None = None, moment_counts: dict[str, int] | None = None) -> dict[str, Any]:
     thumb_v = _file_version(src.thumbnail_path)
     proxy_v = _file_version(src.proxy_path)
     has_transcript = tasks.transcript_path(src.id).exists()
@@ -184,7 +189,11 @@ def source_out(src: Source, active_job: Job | None = None) -> dict[str, Any]:
         "width": src.width,
         "height": src.height,
         "has_audio": src.has_audio,
-        "content_type": src.content_type,
+        "content_type": tasks.effective_content_type(src) if (src.content_type or src.content_type_detected) else None,
+        "content_type_override": src.content_type,
+        "content_type_detected": src.content_type_detected,
+        "content_type_info": src.content_type_info,
+        "target_platform": src.target_platform,
         "language": src.language,
         "language_override": src.language_override,
         "notes": src.notes,
@@ -197,7 +206,12 @@ def source_out(src: Source, active_job: Job | None = None) -> dict[str, Any]:
         "thumbnail_url": f"/sources/{src.id}/thumbnail?v={thumb_v}" if thumb_v else None,
         "proxy_url": f"/sources/{src.id}/proxy?v={proxy_v}" if proxy_v else None,
         "has_transcript": has_transcript,
-        "moments": {"approved": 0, "total": 0},  # Phase 2
+        "has_analysis": tasks.analysis_path(src.id).exists(),
+        "moments": moment_counts or {"approved": 0, "total": 0},
+        "moments_summary": src.moments_summary,
+        "moments_notes": src.moments_notes,
+        "moments_provider": src.moments_provider,
+        "find_moments_command": f"/find-moments {src.id}",
         "created_at": src.created_at.isoformat() if src.created_at else None,
         "updated_at": src.updated_at.isoformat() if src.updated_at else None,
     }
@@ -215,7 +229,7 @@ def _active_jobs_by_source() -> dict[str, Job]:
 
 def _source_response(source_id: str) -> dict[str, Any]:
     src = tasks.load_source(source_id)
-    return source_out(src, _active_jobs_by_source().get(source_id))
+    return source_out(src, _active_jobs_by_source().get(source_id), moments_service.counts(source_id).get(source_id))
 
 
 # --------------------------------------------------------------------------
@@ -226,7 +240,8 @@ def list_sources() -> list[dict[str, Any]]:
     with db.session() as s:
         rows = s.exec(select(Source).order_by(col(Source.created_at).desc())).all()
     active = _active_jobs_by_source()
-    return [source_out(src, active.get(src.id)) for src in rows]
+    counts = moments_service.counts()
+    return [source_out(src, active.get(src.id), counts.get(src.id)) for src in rows]
 
 
 @app.get("/sources/{source_id}")
@@ -327,6 +342,7 @@ class SourcePatch(BaseModel):
     content_type: str | None = None
     language_override: str | None = None
     notes: str | None = Field(default=None, max_length=4000)
+    target_platform: str | None = None
 
 
 @app.patch("/sources/{source_id}")
@@ -346,6 +362,10 @@ def patch_source(source_id: str, body: SourcePatch) -> dict[str, Any]:
         fields["language_override"] = data["language_override"]
     if "notes" in data and data["notes"] is not None:
         fields["notes"] = data["notes"]
+    if "target_platform" in data:
+        if data["target_platform"] not in PLATFORMS:
+            raise errors.AppError(errors.VALIDATION_ERROR, fields="target_platform")
+        fields["target_platform"] = data["target_platform"]
     if fields:
         tasks.update_source(source_id, **fields)
     return _source_response(source_id)
@@ -388,6 +408,7 @@ def start_source(source_id: str, body: StartBody | None = None) -> dict[str, Any
 
 class RerunBody(BaseModel):
     from_step: str
+    provider: str | None = None  # moments provider override for this run
 
 
 @app.post("/sources/{source_id}/rerun")
@@ -400,7 +421,12 @@ def rerun_source(source_id: str, body: RerunBody) -> dict[str, Any]:
         raise errors.AppError(errors.SOURCE_NOT_STARTABLE)
     tasks.reset_steps(source_id, body.from_step)
     tasks.update_source(source_id, status=SOURCE_PROCESSING, error=None)
-    jobs.get_queue().enqueue("pipeline", source_id=source_id, params={"from_step": body.from_step, "force": True})
+    params: dict[str, Any] = {"from_step": body.from_step, "force": True}
+    if body.provider:
+        if body.provider not in settings_store.LLM_PROVIDERS:
+            raise errors.AppError(errors.VALIDATION_ERROR, fields="provider")
+        params["provider"] = body.provider
+    jobs.get_queue().enqueue("pipeline", source_id=source_id, params=params)
     return _source_response(source_id)
 
 
@@ -424,6 +450,7 @@ def delete_source(source_id: str, delete_media: bool = False) -> dict[str, Any]:
         for job in s.exec(select(Job).where(Job.source_id == source_id)).all():
             s.delete(job)
         s.commit()
+    moments_service.delete_for_source(source_id)
     removed = False
     if delete_media:
         folder = tasks.source_dir(source_id)
@@ -456,6 +483,140 @@ def get_thumbnail(source_id: str) -> FileResponse:
     if not src.thumbnail_path or not Path(src.thumbnail_path).exists():
         raise errors.AppError(errors.NOT_FOUND)
     return FileResponse(src.thumbnail_path, media_type="image/jpeg", headers={"Cache-Control": "max-age=86400"})
+
+
+@app.get("/sources/{source_id}/analysis")
+def get_analysis(source_id: str) -> FileResponse:
+    tasks.load_source(source_id)
+    path = tasks.analysis_path(source_id)
+    if not path.exists():
+        raise errors.AppError(errors.ANALYSIS_NOT_READY)
+    return FileResponse(path, media_type="application/json")
+
+
+@app.get("/sources/{source_id}/waveform")
+def get_waveform(source_id: str) -> FileResponse:
+    tasks.load_source(source_id)
+    path = tasks.waveform_path(source_id)
+    if not path.exists():
+        raise errors.AppError(errors.ANALYSIS_NOT_READY)
+    return FileResponse(path, media_type="application/json")
+
+
+# --------------------------------------------------------------------------
+# Moments
+# --------------------------------------------------------------------------
+@app.get("/sources/{source_id}/moments")
+def get_moments(source_id: str) -> list[dict[str, Any]]:
+    tasks.load_source(source_id)
+    return moments_service.list_moments(source_id)
+
+
+class MomentCreate(BaseModel):
+    start: float = Field(ge=0)
+    end: float = Field(gt=0)
+    title: str = Field(default="", max_length=300)
+    hook: str = Field(default="", max_length=300)
+    snap: bool = True
+    status: str = "approved"
+
+
+@app.post("/sources/{source_id}/moments")
+def create_moment(source_id: str, body: MomentCreate) -> dict[str, Any]:
+    return moments_service.create_manual(source_id, start=body.start, end=body.end, title=body.title,
+                                         hook=body.hook, snap_bounds=body.snap, status=body.status)
+
+
+class FindBody(BaseModel):
+    provider: str | None = None
+
+
+@app.post("/sources/{source_id}/moments/find")
+def find_moments(source_id: str, body: FindBody | None = None) -> dict[str, Any]:
+    """(Re)propose moments: re-runs the moments step (claude_code writes a new request file)."""
+    return rerun_source(source_id, RerunBody(from_step="moments", provider=(body or FindBody()).provider))
+
+
+@app.post("/sources/{source_id}/moments/import")
+def import_moments_now(source_id: str) -> dict[str, Any]:
+    """Check data/<id>/moments.json now instead of waiting for the watcher (also re-imports)."""
+    tasks.load_source(source_id)
+    result = moments_service.check_result_file(source_id, force=True)
+    if result == "missing":
+        raise errors.AppError(errors.FILE_NOT_FOUND, name="moments.json")
+    if result == "invalid":
+        issue = tasks.load_source(source_id).steps.get("moments", {}).get("error") or {}
+        raise errors.AppError(errors.MOMENTS_INVALID, detail=(issue.get("params") or {}).get("detail", ""))
+    if tasks.load_source(source_id).status != SOURCE_WAITING:
+        tasks.update_source(source_id, status=SOURCE_READY, error=None)
+    return _source_response(source_id)
+
+
+class MomentPatch(BaseModel):
+    start: float | None = Field(default=None, ge=0)
+    end: float | None = Field(default=None, gt=0)
+    snap: bool = True  # False when the user held Alt (or for undo/redo, which restores exact values)
+    status: str | None = None
+    title: str | None = Field(default=None, max_length=300)
+    hook: str | None = Field(default=None, max_length=300)
+    reason: str | None = Field(default=None, max_length=1000)
+    caption_style: str | None = None
+    platform: str | None = None
+
+
+@app.patch("/moments/{moment_id}")
+def patch_moment(moment_id: int, body: MomentPatch) -> dict[str, Any]:
+    data = body.model_dump(exclude_unset=True, exclude={"snap"})
+    data = {k: v for k, v in data.items() if v is not None}
+    return moments_service.update_moment(moment_id, data, snap_bounds=body.snap)
+
+
+@app.delete("/moments/{moment_id}")
+def remove_moment(moment_id: int) -> dict[str, Any]:
+    moments_service.delete_moment(moment_id)
+    return {"id": moment_id, "deleted": True}
+
+
+class SnapBody(BaseModel):
+    start: float = Field(ge=0)
+    end: float = Field(gt=0)
+
+
+@app.post("/sources/{source_id}/snap")
+def snap_range(source_id: str, body: SnapBody) -> dict[str, float]:
+    """Preview where a range would snap (no DB change)."""
+    src = tasks.load_source(source_id)
+    start, end = moments_service._snap(source_id, body.start, body.end, src.duration)
+    return {"start": start, "end": end}
+
+
+# --------------------------------------------------------------------------
+# Settings
+# --------------------------------------------------------------------------
+@app.get("/settings")
+def get_app_settings() -> dict[str, Any]:
+    s = get_settings()
+    return {
+        **settings_store.get_all(),
+        "env": {
+            "llm_provider": s.llm_provider,
+            "anthropic_configured": bool(s.anthropic_api_key),
+            "openai_configured": bool(s.openai_api_key),
+            "ollama_host": s.ollama_host,
+            "ollama_model": s.ollama_model,
+        },
+        "effective_llm_provider": tasks.selected_provider(),
+    }
+
+
+@app.patch("/settings")
+def patch_app_settings(body: dict[str, Any]) -> dict[str, Any]:
+    body.pop("env", None)
+    body.pop("effective_llm_provider", None)
+    settings_store.update(body)
+    if "rubric_weights" in body:
+        moments_service.rescore_all()
+    return get_app_settings()
 
 
 # --------------------------------------------------------------------------

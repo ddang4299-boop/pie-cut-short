@@ -218,7 +218,16 @@
     "TRANSCRIBE_SKIPPED_NO_AUDIO": "Video không có âm thanh nên đã bỏ qua bước chép lời.",
     "TRANSCRIPT_NOT_READY": "Lời thoại chưa sẵn sàng.",
     "NO_SPEECH_FOUND": "Không tìm thấy lời nói. Bạn vẫn có thể tự thêm khoảnh khắc.",
-    "TRANSCRIBE_CPU_FALLBACK": "Không dùng được GPU để chép lời nên đã chuyển sang CPU (chậm hơn)."
+    "TRANSCRIBE_CPU_FALLBACK": "Không dùng được GPU để chép lời nên đã chuyển sang CPU (chậm hơn).",
+    "ANALYZE_FAILED": "Phân tích thất bại: {{detail}}",
+    "CONTENT_TYPE_FAILED": "Không tự nhận diện được loại nội dung. Hãy chọn trên thẻ video.",
+    "MOMENTS_SKIPPED_NO_TRANSCRIPT": "Không có bản ghi lời nên chưa đề xuất được khoảnh khắc nào. Bạn vẫn có thể tự thêm trên timeline.",
+    "MOMENTS_INVALID": "File moments.json không hợp lệ: {{detail}}. Hãy chạy lại /find-moments.",
+    "MOMENTS_PROVIDER_FAILED": "Bộ chọn khoảnh khắc ({{provider}}) bị lỗi: {{detail}}",
+    "MOMENTS_PROVIDER_NOT_CONFIGURED": "Bộ chọn khoảnh khắc “{{provider}}” chưa được thiết lập (thiếu API key hoặc máy chủ). Hãy chọn bộ khác trong Cài đặt.",
+    "MOMENTS_FEWER_THAN_WANTED": "Chỉ tìm được {{count}} khoảnh khắc. Bạn có thể tự thêm.",
+    "MOMENT_NOT_FOUND": "Khoảnh khắc này không còn tồn tại.",
+    "ANALYSIS_NOT_READY": "Phần phân tích của video này chưa xong."
   },
   "steps": {
     "preflight": "Kiểm tra",
@@ -243,14 +252,22 @@
     "extracting_audio": "Đang tách âm thanh",
     "decoding_audio": "Đang giải mã âm thanh",
     "loading_model": "Đang nạp mô hình nhận dạng giọng nói",
-    "transcribing": "Đang chép lời"
+    "transcribing": "Đang chép lời",
+    "reading_audio": "Đang đọc âm thanh",
+    "loudness": "Đang đo độ lớn âm thanh",
+    "silences": "Đang tìm đoạn im lặng",
+    "scenes": "Đang tìm điểm chuyển cảnh",
+    "content_type": "Đang nhận diện loại nội dung",
+    "proposing": "Đang chọn khoảnh khắc",
+    "importing": "Đang tải khoảnh khắc"
   },
   "source_status": {
     "downloading": "Đang tải về",
     "new": "Sẵn sàng bắt đầu",
     "processing": "Đang xử lý",
     "ready": "Hoàn tất",
-    "error": "Cần kiểm tra"
+    "error": "Cần kiểm tra",
+    "waiting": "Đang chờ /find-moments"
   },
   "content_type": {
     "talking_head": "Người nói trực diện",

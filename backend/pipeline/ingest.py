@@ -254,11 +254,11 @@ def make_proxy(
         except FFmpegError as exc:
             last_error = exc
             safe_unlink(tmp)
+            if log and enc != encoders[-1]:
+                log(f"{enc} failed, falling back to libx264")
         except BaseException:
             safe_unlink(tmp)  # cancelled: the job queue already killed ffmpeg
             raise
-            if log and enc != encoders[-1]:
-                log(f"{enc} failed, falling back to libx264")
     assert last_error is not None
     raise last_error
 

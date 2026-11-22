@@ -93,11 +93,12 @@ def test_full_pipeline_with_cache_and_rerun(client, tmp_path, fake_transcriber):
 
     assert run_queue() == 1
     done = client.get(f"/sources/{src['id']}").json()
-    assert done["status"] == "ready", done
+    assert done["status"] == "waiting", done  # default provider claude_code waits for /find-moments
     assert done["notes"] == "focus on tips"
-    for step in ("preflight", "proxy", "transcribe"):
+    for step in ("preflight", "proxy", "transcribe", "analyze"):
         assert done["steps"][step]["state"] == "done", step
-    assert done["steps"]["analyze"]["state"] == "pending"  # Phase 2
+    assert done["steps"]["moments"]["state"] == "waiting"
+    assert done["has_analysis"] and done["find_moments_command"] == f"/find-moments {src['id']}"
     assert done["language"] == "vi" and done["has_transcript"]
     assert done["proxy_url"]
     proxy = client.get(done["proxy_url"])
@@ -119,7 +120,7 @@ def test_full_pipeline_with_cache_and_rerun(client, tmp_path, fake_transcriber):
     src2 = upload(client, media, name="copy.mp4").json()
     client.post(f"/sources/{src2['id']}/start", json={})
     run_queue()
-    assert client.get(f"/sources/{src2['id']}").json()["status"] == "ready"
+    assert client.get(f"/sources/{src2['id']}").json()["status"] == "waiting"
     assert len(fake_transcriber) == 1
 
     # Re-run from transcribe forces a fresh transcription; other steps stay done.
@@ -128,7 +129,7 @@ def test_full_pipeline_with_cache_and_rerun(client, tmp_path, fake_transcriber):
     assert r.json()["steps"]["proxy"]["state"] == "done"
     run_queue()
     assert len(fake_transcriber) == 2
-    assert client.get(f"/sources/{src['id']}").json()["status"] == "ready"
+    assert client.get(f"/sources/{src['id']}").json()["status"] == "waiting"
 
     # A different language option is a different cache entry.
     client.patch(f"/sources/{src['id']}", json={"language_override": "en"})
@@ -194,7 +195,7 @@ def test_resume_after_restart_skips_finished_steps(client, tmp_path, fake_transc
     assert jobs.get_queue().recover() == 1
     run_queue()
     out = client.get(f"/sources/{src['id']}").json()
-    assert out["status"] == "ready" and out["steps"]["transcribe"]["state"] == "done"
+    assert out["status"] == "waiting" and out["steps"]["transcribe"]["state"] == "done"
     assert len(proxy_calls) == 1  # proxy was not redone
 
 

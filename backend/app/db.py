@@ -6,7 +6,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
-from sqlalchemy import event
+from sqlalchemy import event, inspect, text
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, SQLModel, create_engine
 
@@ -36,8 +36,36 @@ def init_db(path: Path) -> Engine:
     engine = create_engine(f"sqlite:///{path.as_posix()}", connect_args={"check_same_thread": False})
     event.listen(engine, "connect", _sqlite_pragmas)
     SQLModel.metadata.create_all(engine)
+    _add_missing_columns(engine)
     _engine, _engine_path = engine, path
     return engine
+
+
+def _add_missing_columns(engine: Engine) -> None:
+    """Tiny forward-only migration: add columns that exist in the models but not in the DB file.
+
+    create_all() never alters existing tables, so new optional fields would otherwise break old DBs.
+    New columns are added as nullable with the model's scalar default (if any) as SQL DEFAULT.
+    """
+    insp = inspect(engine)
+    with engine.begin() as conn:
+        for table in SQLModel.metadata.sorted_tables:
+            if not insp.has_table(table.name):
+                continue
+            existing = {c["name"] for c in insp.get_columns(table.name)}
+            for column in table.columns:
+                if column.name in existing:
+                    continue
+                col_type = column.type.compile(dialect=engine.dialect)
+                default = column.default.arg if column.default is not None and column.default.is_scalar else None
+                ddl = f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {col_type}'
+                if isinstance(default, bool):
+                    ddl += f" DEFAULT {int(default)}"
+                elif isinstance(default, (int, float)):
+                    ddl += f" DEFAULT {default}"
+                elif isinstance(default, str):
+                    ddl += " DEFAULT '" + default.replace("'", "''") + "'"
+                conn.execute(text(ddl))
 
 
 def engine() -> Engine:

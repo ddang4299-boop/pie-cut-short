@@ -23,7 +23,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from app import db, errors
+from app import db, errors, moments_service, settings_store
 from app.config import get_settings
 from app.jobs import JobCancelled, JobContext, JobQueue
 from app.models import (
@@ -34,6 +34,7 @@ from app.models import (
     SOURCE_NEW,
     SOURCE_PROCESSING,
     SOURCE_READY,
+    SOURCE_WAITING,
     STEP_DONE_STATES,
     STEPS,
     Job,
@@ -41,11 +42,12 @@ from app.models import (
     empty_steps,
     utcnow,
 )
-from pipeline import ingest, preflight, transcribe
+from pipeline import analyze, ingest, preflight, transcribe
+from pipeline import moments as mp
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
-IMPLEMENTED_STEPS = ("preflight", "proxy", "transcribe")  # analyze + moments arrive in Phase 2
-STEP_WEIGHTS = {"preflight": 0.05, "proxy": 0.30, "transcribe": 0.65, "analyze": 0.0, "moments": 0.0}
+IMPLEMENTED_STEPS = ("preflight", "proxy", "transcribe", "analyze", "moments")
+STEP_WEIGHTS = {"preflight": 0.03, "proxy": 0.25, "transcribe": 0.55, "analyze": 0.12, "moments": 0.05}
 PROXY_VERSION = 1
 
 StepFn = Callable[[JobContext, Source, "StepReporter"], str]
@@ -331,6 +333,54 @@ def run_transcriber(
         raise errors.AppError(errors.TRANSCRIBE_FAILED, detail=detail)
 
 
+def run_vision(ctx: JobContext, task: str, video: Path, *, on_progress: Any = None, **options: Any) -> Any:
+    """Run `python -m pipeline.vision_worker` (OpenCV / MediaPipe in a child process) and return its result."""
+    cmd = [sys.executable, "-m", "pipeline.vision_worker", task, str(video)]
+    for key, value in options.items():
+        if value is not None:
+            cmd += ["--" + key.replace("_", "-"), str(value)]
+    ctx.log("$ " + " ".join(cmd))
+    env = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1", "GLOG_minloglevel": "2"}
+    proc = subprocess.Popen(
+        cmd, cwd=str(BACKEND_DIR), env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        text=True, encoding="utf-8", errors="replace", creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    )
+    ctx.attach_process(proc)
+    stderr_tail: list[str] = []
+
+    def drain() -> None:
+        assert proc.stderr is not None
+        for line in proc.stderr:
+            if line.strip():
+                stderr_tail.append(line.rstrip())
+                del stderr_tail[:-20]
+
+    t = threading.Thread(target=drain, daemon=True)
+    t.start()
+    result: Any = None
+    message: str | None = None
+    assert proc.stdout is not None
+    for line in proc.stdout:
+        try:
+            event = json.loads(line)
+        except ValueError:
+            ctx.log(line.rstrip())
+            continue
+        kind = event.get("event")
+        if kind == "progress" and on_progress:
+            on_progress(float(event.get("progress", 0)))
+        elif kind == "result":
+            result = event.get("data")
+        elif kind == "error":
+            message = str(event.get("message", ""))
+    proc.wait()
+    t.join(timeout=5)
+    ctx.check_cancelled()
+    if proc.returncode != 0 or result is None:
+        raise RuntimeError(message or (stderr_tail[-1] if stderr_tail else f"exit code {proc.returncode}"))
+    return result
+
+
 def step_transcribe(ctx: JobContext, src: Source, report: StepReporter) -> str:
     settings = get_settings()
     if not src.has_audio:
@@ -349,16 +399,12 @@ def step_transcribe(ctx: JobContext, src: Source, report: StepReporter) -> str:
     if cached.exists() and not force:
         ctx.log(f"transcript cache hit {cached.name}")
     else:
-        audio = source_dir(src.id) / "audio_16k.wav"
-        if not audio.exists():
-            report(0.0, stage="extracting_audio")
-            try:
-                ingest.extract_audio(Path(src.media_path or ""), audio, duration=src.duration,
-                                     ffmpeg=settings.ffmpeg_bin, on_process=ctx.attach_process,
-                                     on_progress=lambda f: report(0.05 * f), log=ctx.log)
-            except ingest.FFmpegError as exc:
-                ctx.check_cancelled()
-                raise errors.AppError(errors.TRANSCRIBE_FAILED, detail=str(exc)[:300]) from exc
+        try:
+            audio = ensure_audio(ctx, src, report)
+        except ingest.FFmpegError as exc:
+            ctx.check_cancelled()
+            raise errors.AppError(errors.TRANSCRIBE_FAILED, detail=str(exc)[:300]) from exc
+        assert audio is not None
         tmp = cache_dir / f"{key}.json.tmp"
         run_transcriber(ctx, audio, tmp, model=model, device=whisper_device(), language=option, report=report)
         tmp.replace(cached)
@@ -374,10 +420,159 @@ def step_transcribe(ctx: JobContext, src: Source, report: StepReporter) -> str:
     return "done"
 
 
+# --------------------------------------------------------------------------
+# Analyze (scene cuts, loudness, silences, waveform) + content type
+# --------------------------------------------------------------------------
+def analysis_path(source_id: str) -> Path:
+    return source_dir(source_id) / "analysis.json"
+
+
+def waveform_path(source_id: str) -> Path:
+    return source_dir(source_id) / "waveform.json"
+
+
+def ensure_audio(ctx: JobContext, src: Source, report: StepReporter | None = None) -> Path | None:
+    """data/<id>/audio_16k.wav (shared by transcription and analysis); None without an audio track."""
+    if not src.has_audio:
+        return None
+    audio = source_dir(src.id) / "audio_16k.wav"
+    if not audio.exists():
+        if report:
+            report(0.0, stage="extracting_audio")
+        ingest.extract_audio(Path(src.media_path or ""), audio, duration=src.duration,
+                             ffmpeg=get_settings().ffmpeg_bin, on_process=ctx.attach_process, log=ctx.log)
+    return audio
+
+
+def step_analyze(ctx: JobContext, src: Source, report: StepReporter) -> str:
+    settings = get_settings()
+    out, wave_out = analysis_path(src.id), waveform_path(src.id)
+    key = f"{src.file_hash or src.id}:v{analyze.ANALYZE_VERSION}"
+    force = bool(ctx.params.get("force")) and ctx.params.get("from_step") == "analyze"
+    cached = None
+    if out.exists() and wave_out.exists() and not force:
+        try:
+            cached = json.loads(out.read_text("utf-8"))
+        except (OSError, ValueError):
+            cached = None
+    if cached and cached.get("key") == key:
+        ctx.log("analysis is up to date (cached)")
+    else:
+        try:
+            audio = ensure_audio(ctx, src, report)
+            proxy = Path(src.proxy_path) if src.proxy_path else None
+            result, peaks = analyze.analyze(
+                audio, proxy, duration=src.duration or 0.0, ffmpeg=settings.ffmpeg_bin,
+                on_progress=lambda f, stage=None: report(0.9 * f, stage=stage),
+                on_process=ctx.attach_process, log=ctx.log,
+                scenes_fn=lambda video, on_progress=None: run_vision(ctx, "scenes", video, on_progress=on_progress),
+            )
+        except JobCancelled:
+            raise
+        except Exception as exc:
+            ctx.check_cancelled()
+            ctx.log(f"analysis failed: {exc!r}")
+            raise errors.AppError(errors.ANALYZE_FAILED, detail=str(exc)[:300] or type(exc).__name__) from exc
+        result["key"] = key
+        wave_out.write_text(json.dumps({"rate": analyze.WAVEFORM_RATE, "peaks": peaks}), encoding="utf-8")
+        out.write_text(json.dumps(result), encoding="utf-8")
+
+    report(0.9, stage="content_type")
+    if src.proxy_path and Path(src.proxy_path).exists():
+        try:
+            transcript = transcript_path(src.id)
+            detected = run_vision(
+                ctx, "content_type", Path(src.proxy_path), duration=src.duration or 0.0,
+                transcript=transcript if transcript.exists() else None, models_dir=settings.models_path,
+                on_progress=lambda f: report(0.9 + 0.1 * f),
+            )
+            update_source(src.id, content_type_detected=detected["content_type"],
+                          content_type_info={"confidence": detected["confidence"], **detected["metrics"]})
+            ctx.log(f"content type: {detected}")
+        except JobCancelled:
+            raise
+        except Exception as exc:
+            ctx.log(f"content type detection failed: {exc!r}")
+            report.notice(errors.CONTENT_TYPE_FAILED)
+    return "done"
+
+
+# --------------------------------------------------------------------------
+# Moments
+# --------------------------------------------------------------------------
+def effective_content_type(src: Source) -> str:
+    return src.content_type or src.content_type_detected or "talking_head"
+
+
+def selected_provider(override: str | None = None) -> str:
+    for name in (override, settings_store.get("llm_provider"), get_settings().llm_provider):
+        if name in mp.PROVIDERS:
+            return name
+    return "claude_code"
+
+
+def request_meta(src: Source) -> mp.RequestMeta:
+    prefs = settings_store.get_all()
+    language = src.language_override if src.language_override not in (None, "", "auto") else (src.language or "en")
+    return mp.RequestMeta(
+        source_id=src.id, file_name=src.name, duration=float(src.duration or 0.0), language=language,
+        ui_language=prefs["ui_language"], content_type=effective_content_type(src),
+        target_platform=src.target_platform or prefs["default_platform"],
+        clip_min=int(prefs["clip_min"]), clip_max=int(prefs["clip_max"]),
+        wanted=(int(prefs["moments_wanted"][0]), int(prefs["moments_wanted"][1])), user_notes=src.notes or "",
+    )
+
+
+def step_moments(ctx: JobContext, src: Source, report: StepReporter) -> str:
+    settings = get_settings()
+    words = moments_service.load_words(src.id)
+    if not words:
+        report.notice(errors.MOMENTS_SKIPPED_NO_TRANSCRIPT)
+        return "skipped"
+    analysis = moments_service.load_analysis(src.id)
+    meta = request_meta(src)
+    sentences = mp.build_sentences(words)
+    texts = mp.build_requests(meta, sentences, analysis)
+    provider = selected_provider(ctx.params.get("provider"))
+    ctx.log(f"moments: provider={provider}, {len(sentences)} sentences, {len(texts)} part(s)")
+
+    if provider == "claude_code":
+        files = mp.write_request_files(source_dir(src.id), meta, texts)
+        set_step(src.id, "moments", requested_at=time.time(), checked_mtime=None, provider=provider,
+                 request_files=[f.name for f in files])
+        ctx.log("request written: " + ", ".join(str(f) for f in files))
+        ctx.log(f"waiting for /find-moments {src.id}")
+        return "waiting"
+
+    try:
+        prov = mp.make_provider(provider, anthropic_key=settings.anthropic_api_key, anthropic_model=settings.anthropic_model,
+                                openai_key=settings.openai_api_key, openai_model=settings.openai_model,
+                                ollama_host=settings.ollama_host, ollama_model=settings.ollama_model)
+    except mp.ProviderNotConfigured as exc:
+        raise errors.AppError(errors.MOMENTS_PROVIDER_NOT_CONFIGURED, provider=exc.provider) from exc
+    report(0.1, stage="proposing")
+    inp = mp.ProposeInput(meta=meta, texts=texts, sentences=sentences, analysis=analysis,
+                          weights=settings_store.rubric_weights(), log=ctx.log)
+    try:
+        parsed = prov.propose(inp)
+    except mp.ProviderError as exc:
+        ctx.check_cancelled()
+        raise errors.AppError(errors.MOMENTS_PROVIDER_FAILED, provider=exc.provider, detail=exc.detail) from exc
+    ctx.check_cancelled()
+    (source_dir(src.id) / f"moments.{provider}.json").write_text(parsed.model_dump_json(indent=1), encoding="utf-8")
+    report(0.9, stage="importing")
+    moments_service.import_moments(src.id, parsed, provider)
+    if len(parsed.moments) < meta.wanted[0]:
+        report.notice(errors.MOMENTS_FEWER_THAN_WANTED, count=len(parsed.moments))
+    return "done"
+
+
 STEP_FUNCS: dict[str, StepFn] = {
     "preflight": step_preflight,
     "proxy": step_proxy,
     "transcribe": step_transcribe,
+    "analyze": step_analyze,
+    "moments": step_moments,
 }
 
 
@@ -425,6 +620,12 @@ def handle_pipeline(ctx: JobContext) -> None:
                 set_step(source_id, step, state="error", error=issue, stage=None, notices=report.notices)
                 update_source(source_id, status=SOURCE_ERROR, error=issue)
             raise
+        if result == "waiting":  # e.g. /find-moments in Claude Code: the watcher finishes the step
+            set_step(source_id, step, state="waiting", progress=0.0, error=None, stage=None, notices=report.notices)
+            update_source(source_id, status=SOURCE_WAITING, error=None)
+            ctx.progress(base, step=step, force=True)
+            ctx.log(f"step {step}: waiting")
+            return
         set_step(source_id, step, state=result, progress=1.0, error=None, stage=None, notices=report.notices)
         ctx.log(f"step {step}: {result}")
         base += weight

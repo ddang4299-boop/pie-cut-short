@@ -35,6 +35,7 @@ def app_env(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(data))
     monkeypatch.setenv("START_JOB_WORKERS", "false")
     monkeypatch.setenv("WHISPER_MODEL", "tiny")
+    monkeypatch.setenv("LLM_PROVIDER", "claude_code")
     get_settings.cache_clear()
     db.init_db(get_settings().db_path)
     yield data
