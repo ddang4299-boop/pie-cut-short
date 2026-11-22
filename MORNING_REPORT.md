@@ -35,3 +35,9 @@ Header hiện "Backend online" màu xanh; bấm EN/VI thì toàn bộ chữ trê
 **Việc bạn nên làm khi thức dậy**
 - Thả **một video thật 2–5 phút có giọng nói** (tiếng Việt hoặc tiếng Anh) vào `samples/`. Hiện chỉ có video tổng hợp không có tiếng nói, nên phần nhận dạng giọng nói chưa được thử với dữ liệu thật.
 - (Tuỳ chọn) Cài Python 3.11/3.12 nếu muốn đúng phiên bản trong spec.
+
+---
+
+## Phase 0b — Tái sử dụng claude-shorts ⏭️
+
+Bỏ qua: không có thư mục `vendor/claude-shorts`. Nếu muốn dùng lại repo đó, hãy clone vào `vendor/claude-shorts` rồi chạy lại Phase 0b.

@@ -254,7 +254,7 @@ Reference numbers for a mid-range GPU (e.g. RTX 3060); CPU being 3–5× slower 
 
 ## Progress
 - [x] Phase 0 — Project skeleton + i18n
-- [ ] Phase 0b — Reuse claude-shorts (if cloned)
+- [x] Phase 0b — Reuse claude-shorts (skipped: not cloned)
 - [ ] Phase 1 — Ingest + Transcribe + Library
 - [ ] Phase 2 — Analyze + Moment proposals + Moments Review
 - [ ] Phase 3 — Reframe + Clip Editor

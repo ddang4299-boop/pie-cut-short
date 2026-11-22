@@ -1,0 +1,4 @@
+Phase 0 done: FastAPI backend with /health (ffmpeg, device, encoder), preflight.py + error-code registry.
+React/Vite/TS/Tailwind frontend: dark theme, 64px sidebar with 5 pages, header EN/VI switcher, Jobs drawer, translated health status.
+react-i18next with locale parity tests (pytest + vitest); language from browser, persisted in localStorage.
+Tests: pytest 44 passed, vitest 11 passed, build ok, browser smoke test passed in EN and VI.
