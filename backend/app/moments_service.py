@@ -92,8 +92,23 @@ def list_moments(source_id: str) -> list[dict[str, Any]]:
     return [moment_out(m) for m in rows]
 
 
-def import_moments(source_id: str, parsed: mp.MomentsFile, provider: str) -> list[dict[str, Any]]:
-    """Replace the AI proposals of a source (approved and manual moments are kept)."""
+def import_notices(parsed: mp.MomentsFile, added: int) -> list[dict[str, Any]]:
+    """Notices shown after an import: too few proposals, or proposals dropped as duplicates."""
+    notices = []
+    count = len(parsed.moments)
+    if count < settings_store.get("moments_wanted")[0]:
+        notices.append(errors.issue(errors.MOMENTS_FEWER_THAN_WANTED, count=count))
+    if added < count:
+        notices.append(errors.issue(errors.MOMENTS_DUPLICATES_DROPPED, count=count - added, total=count))
+    return notices
+
+
+def import_moments(source_id: str, parsed: mp.MomentsFile, provider: str) -> int:
+    """Replace the AI proposals of a source (approved and manual moments are kept).
+
+    Returns how many proposals were added; the rest were too short, duplicates of a better
+    proposal, or already covered by a moment the user approved or made.
+    """
     with db.session() as s:
         src = s.get(Source, source_id)
         if src is None:
@@ -130,8 +145,8 @@ def import_moments(source_id: str, parsed: mp.MomentsFile, provider: str) -> lis
         src.updated_at = utcnow()
         s.add(src)
         s.commit()
-    log.info("imported %d moments for %s from %s", added, source_id, provider)
-    return list_moments(source_id)
+    log.info("imported %d/%d moments for %s from %s", added, len(parsed.moments), source_id, provider)
+    return added
 
 
 # --------------------------------------------------------------------------
@@ -166,11 +181,8 @@ def check_result_file(source_id: str, *, force: bool = False) -> str:
         tasks.set_step(source_id, "moments", checked_mtime=mtime, error=errors.issue(errors.MOMENTS_INVALID, detail=detail))
         log.warning("invalid moments.json for %s: %s", source_id, detail)
         return "invalid"
-    import_moments(source_id, parsed, "claude_code")
-    notices = []
-    count = len(parsed.moments)
-    if count < settings_store.get("moments_wanted")[0]:
-        notices.append(errors.issue(errors.MOMENTS_FEWER_THAN_WANTED, count=count))
+    added = import_moments(source_id, parsed, "claude_code")
+    notices = import_notices(parsed, added)
     tasks.set_step(source_id, "moments", state="done", progress=1.0, error=None, stage=None,
                    checked_mtime=mtime, notices=notices)
     tasks.update_source(source_id, status=SOURCE_READY, error=None)

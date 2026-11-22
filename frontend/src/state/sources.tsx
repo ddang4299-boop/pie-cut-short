@@ -67,7 +67,7 @@ export function SourcesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const activeJobCount = jobs.filter((j) => j.status === "queued" || j.status === "running").length;
-  const busy = activeJobCount > 0 || uploads.length > 0 || sources.some((s) => s.status === "downloading" || s.status === "processing");
+  const busy = activeJobCount > 0 || uploads.length > 0 || sources.some((s) => s.status === "downloading" || s.status === "processing" || s.status === "waiting");
 
   useEffect(() => {
     void refresh();

@@ -11,6 +11,7 @@ import { BrowserRouter } from "react-router";
 import App from "./App";
 import { ToastProvider } from "./components/Toasts";
 import { HealthProvider } from "./state/health";
+import { SaveStatusProvider } from "./state/save";
 import { SourcesProvider } from "./state/sources";
 
 createRoot(document.getElementById("root")!).render(
@@ -18,9 +19,11 @@ createRoot(document.getElementById("root")!).render(
     <BrowserRouter>
       <HealthProvider>
         <SourcesProvider>
-          <ToastProvider>
-            <App />
-          </ToastProvider>
+          <SaveStatusProvider>
+            <ToastProvider>
+              <App />
+            </ToastProvider>
+          </SaveStatusProvider>
         </SourcesProvider>
       </HealthProvider>
     </BrowserRouter>

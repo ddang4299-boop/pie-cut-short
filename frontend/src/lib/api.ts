@@ -98,13 +98,19 @@ export function getHealth(refresh = false): Promise<Health> {
 // ---------------------------------------------------------------------------
 export const STEPS = ["preflight", "proxy", "transcribe", "analyze", "moments"] as const;
 export type Step = (typeof STEPS)[number];
-export const RERUNNABLE_STEPS: Step[] = ["preflight", "proxy", "transcribe"];
+export const RERUNNABLE_STEPS: Step[] = ["preflight", "proxy", "transcribe", "analyze", "moments"];
 export type StepState = "pending" | "queued" | "running" | "done" | "skipped" | "error" | "waiting";
 export const CONTENT_TYPES = ["talking_head", "screen_recording", "podcast", "gameplay_facecam"] as const;
 export type ContentType = (typeof CONTENT_TYPES)[number];
 export const LANGUAGE_OPTIONS = ["auto", "vi", "en", "mixed"] as const;
 export type LanguageOption = (typeof LANGUAGE_OPTIONS)[number];
-export type SourceStatus = "downloading" | "new" | "processing" | "ready" | "error";
+export type SourceStatus = "downloading" | "new" | "processing" | "waiting" | "ready" | "error";
+export const PLATFORMS = ["youtube_shorts", "tiktok", "reels"] as const;
+export type Platform = (typeof PLATFORMS)[number];
+export const CAPTION_STYLES = ["bold", "bounce", "clean"] as const;
+export type CaptionStyle = (typeof CAPTION_STYLES)[number];
+export const LLM_PROVIDERS = ["claude_code", "anthropic", "openai", "ollama", "heuristic"] as const;
+export type LlmProvider = (typeof LLM_PROVIDERS)[number];
 export type JobStatus = "queued" | "running" | "done" | "error" | "cancelled";
 
 export interface StepInfo {
@@ -113,6 +119,8 @@ export interface StepInfo {
   error?: ApiIssue | null;
   stage?: string | null;
   notices?: ApiIssue[];
+  provider?: string;
+  request_files?: string[];
 }
 
 export interface PreflightResult {
@@ -160,7 +168,12 @@ export interface Source {
   width: number | null;
   height: number | null;
   has_audio: boolean;
+  /** Effective type: the user's override, else the detected one (null until analysis ran). */
   content_type: ContentType | null;
+  content_type_override: ContentType | null;
+  content_type_detected: ContentType | null;
+  content_type_info: Record<string, number | string> | null;
+  target_platform: Platform | null;
   language: string | null;
   language_override: LanguageOption;
   notes: string;
@@ -173,7 +186,12 @@ export interface Source {
   thumbnail_url: string | null;
   proxy_url: string | null;
   has_transcript: boolean;
+  has_analysis: boolean;
   moments: { approved: number; total: number };
+  moments_summary: string | null;
+  moments_notes: string | null;
+  moments_provider: string | null;
+  find_moments_command: string;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -202,7 +220,7 @@ export const listSources = () => apiGet<Source[]>("/sources");
 export const listJobs = (limit = 30) => apiGet<Job[]>(`/jobs?limit=${limit}`);
 export const getTranscript = (id: string) => apiGet<Transcript>(`/sources/${id}/transcript`);
 export const importSource = (location: string) => apiSend<Source>("POST", "/sources/import", { location });
-export const patchSource = (id: string, body: Partial<Pick<Source, "name" | "content_type" | "language_override" | "notes">>) =>
+export const patchSource = (id: string, body: Partial<Pick<Source, "name" | "language_override" | "notes" | "target_platform">> & { content_type?: ContentType | null }) =>
   apiSend<Source>("PATCH", `/sources/${id}`, body);
 export const startSource = (id: string, body: { language?: LanguageOption; notes?: string }) =>
   apiSend<Source>("POST", `/sources/${id}/start`, body);
@@ -251,3 +269,81 @@ export function uploadSource(file: File, onProgress: (loaded: number, total: num
   });
   return { promise, abort: () => xhr.abort() };
 }
+
+// ---------------------------------------------------------------------------
+// Analysis + moments (Phase 2)
+// ---------------------------------------------------------------------------
+export const RUBRIC = ["hook_strength", "coherence", "emotion", "value_density", "payoff"] as const;
+export type RubricKey = (typeof RUBRIC)[number];
+export type MomentStatus = "proposed" | "approved" | "rejected";
+
+export interface Moment {
+  id: number;
+  source_id: string;
+  start: number;
+  end: number;
+  duration: number;
+  scores: Partial<Record<RubricKey, number>>;
+  score: number;
+  title: string;
+  hook: string;
+  reason: string;
+  category: string;
+  key_line: [number, number] | null;
+  status: MomentStatus;
+  origin: "ai" | "manual";
+  provider: string | null;
+  caption_style: CaptionStyle;
+  platform: Platform;
+  raw_start: number | null;
+  raw_end: number | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export type MomentPatch = Partial<Pick<Moment, "start" | "end" | "title" | "hook" | "reason" | "status" | "caption_style" | "platform">> & {
+  snap?: boolean;
+};
+
+export interface Analysis {
+  version: number;
+  duration: number;
+  scene_cuts: number[];
+  loudness: number[];
+  peaks: [number, number][];
+  silences: [number, number][];
+  silence_threshold_db: number | null;
+}
+
+export interface Waveform {
+  rate: number;
+  peaks: number[];
+}
+
+export interface AppSettings {
+  ui_language: "en" | "vi";
+  rubric_weights: Record<RubricKey, number>;
+  llm_provider: LlmProvider | null;
+  default_platform: Platform;
+  default_caption_style: CaptionStyle;
+  clip_min: number;
+  clip_max: number;
+  moments_wanted: [number, number];
+  env: { llm_provider: string; anthropic_configured: boolean; openai_configured: boolean; ollama_host: string; ollama_model: string };
+  effective_llm_provider: LlmProvider;
+}
+
+export const getAnalysis = (id: string) => apiGet<Analysis>(`/sources/${id}/analysis`);
+export const getWaveform = (id: string) => apiGet<Waveform>(`/sources/${id}/waveform`);
+export const listMoments = (id: string) => apiGet<Moment[]>(`/sources/${id}/moments`);
+export const createMoment = (id: string, body: { start: number; end: number; title?: string; hook?: string; snap?: boolean; status?: MomentStatus }) =>
+  apiSend<Moment>("POST", `/sources/${id}/moments`, body);
+export const patchMoment = (id: number, body: MomentPatch) => apiSend<Moment>("PATCH", `/moments/${id}`, body);
+export const deleteMoment = (id: number) => apiSend<{ deleted: boolean }>("DELETE", `/moments/${id}`);
+export const snapRange = (id: string, start: number, end: number) =>
+  apiSend<{ start: number; end: number }>("POST", `/sources/${id}/snap`, { start, end });
+export const findMoments = (id: string, provider?: LlmProvider) =>
+  apiSend<Source>("POST", `/sources/${id}/moments/find`, provider ? { provider } : {});
+export const importMomentsNow = (id: string) => apiSend<Source>("POST", `/sources/${id}/moments/import`);
+export const getSettings = () => apiGet<AppSettings>("/settings");
+export const patchSettings = (body: Partial<Omit<AppSettings, "env" | "effective_llm_provider">>) => apiSend<AppSettings>("PATCH", "/settings", body);

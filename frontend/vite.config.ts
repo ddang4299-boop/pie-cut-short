@@ -21,5 +21,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
+    // The default forks/threads pools fail here ("Cannot read properties of undefined (reading 'config')"
+    // in every file, Node 24.22 + Vitest 5.1.1); vmThreads runs the same tests fine.
+    pool: "vmThreads",
   },
 });

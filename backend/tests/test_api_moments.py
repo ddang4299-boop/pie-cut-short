@@ -54,6 +54,16 @@ def test_request_file_is_written_in_the_source_folder(waiting_source):
     assert waiting_source["find_moments_command"] == f"/find-moments {sid}"
 
 
+def test_dropped_duplicates_are_reported(client, waiting_source):  # noqa: F811
+    sid = waiting_source["id"]
+    write_result(sid, doc(sid, (0.1, 2.9, "Cả đoạn"), (0.2, 2.8, "Gần như y hệt")))
+    moments_service.ResultWatcher().tick()
+    data = client.get(f"/sources/{sid}").json()
+    codes = {n["code"]: n["params"] for n in data["steps"]["moments"]["notices"]}
+    assert codes["MOMENTS_DUPLICATES_DROPPED"] == {"count": 1, "total": 2}
+    assert data["moments"]["total"] == 1
+
+
 def test_watcher_imports_moments_and_review_edits_persist(client, waiting_source):  # noqa: F811
     sid = waiting_source["id"]
     watcher = moments_service.ResultWatcher()

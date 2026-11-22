@@ -80,3 +80,71 @@ Bỏ qua: không có thư mục `vendor/claude-shorts`. Nếu muốn dùng lại
 **Việc bạn nên làm khi thức dậy**
 - Thả **một video thật có giọng nói tiếng Việt** vào `samples/` rồi nhập qua Thư viện. Máy không có giọng đọc tiếng Việt nên phần chép lời tiếng Việt **chưa được kiểm tra** với dữ liệu thật.
 - Thử nhập bằng một đường link YouTube. Phần tải về đã có test giả lập nhưng chưa tải thật, vì quy tắc autopilot hạn chế gọi mạng.
+
+---
+
+## Phase 2 — Phân tích + Đề xuất khoảnh khắc + Duyệt khoảnh khắc ✅
+
+**Đã làm**
+- **Phân tích** (`pipeline/analyze.py`):
+  - Độ to theo từng giây (ffmpeg ebur128) và 30 đỉnh âm thanh.
+  - Khoảng lặng (silencedetect, ngưỡng tự điều chỉnh theo bản ghi).
+  - Chuyển cảnh (PySceneDetect) và dạng sóng cho timeline.
+- **Nhận diện loại nội dung** (`pipeline/content_type.py`): `talking_head | screen_recording | podcast | gameplay_facecam`.
+  - Dựa trên khuôn mặt (MediaPipe, dự phòng bằng Haar của OpenCV), chuyển động và tỉ lệ có lời nói.
+  - Người dùng bấm vào nhãn để đổi; lựa chọn đó luôn được ưu tiên.
+- **Đề xuất khoảnh khắc** (`pipeline/moments.py`), 5 nhà cung cấp:
+  - `claude_code` (mặc định): backend ghi `analysis_request.md` đúng định dạng A.1, bạn chạy `/find-moments <id>` trong Claude Code, app tự phát hiện `moments.json` và nạp vào.
+  - `anthropic` / `openai` / `ollama`: đã có code nhưng **chưa gọi thật lần nào**, chỉ test giả lập.
+  - `heuristic`: dùng ngoại tuyến, không cần AI.
+  - Điểm tổng luôn được **tính lại** từ 5 tiêu chí theo trọng số trong Cài đặt.
+  - Video dài được chia thành nhiều phần.
+- **Bắt dính ranh giới** (`pipeline/snap.py`): ưu tiên đầu/cuối câu, rồi đến ranh giới từ, rồi tinh chỉnh theo khoảng lặng (±0,5 giây), thêm 0,15 giây đệm. **Không bao giờ cắt giữa một từ.**
+- **Trang Duyệt khoảnh khắc** (3 cột):
+  - **Danh sách bên trái:**
+    - Lọc Tất cả / Đề xuất / Đã duyệt / Đã loại, sắp theo điểm hoặc thời gian.
+    - Mỗi thẻ có: vòng điểm màu, 5 thanh tiêu chí (di chuột để xem số), lý do thu gọn 2 dòng, nút ✓ / ✕.
+  - **Ở giữa:**
+    - Trình phát có "Xem trước 9:16" và chế độ lặp, chỉ phát trong khoảnh khắc đang chọn.
+    - Minimap toàn video.
+    - Timeline phóng to ±10 giây: dạng sóng, khoảng lặng màu xám, chuyển cảnh, tay cầm vào/ra bắt dính theo từ (giữ Alt để tắt). Thả tay cầm xong sẽ hiện "Đã bắt dính vào …".
+    - Ô thời gian gõ được hoặc kéo để tua; sửa được tiêu đề và câu mở đầu.
+  - **Bên phải:** bản ghi lời thoại tô sáng từ đang nói và tô nền các câu thuộc khoảnh khắc. Bấm vào từ để tua; bôi đen một đoạn thì hiện nút **"Tạo khoảnh khắc"**, lấy luôn đoạn chữ đó làm tiêu đề.
+  - **Thanh dưới:** kiểu phụ đề, nền tảng và nút **"Duyệt & mở Trình biên tập"**.
+  - **Tự lưu** sau 500 ms (header hiện "Đang lưu… / Đã lưu"), **Hoàn tác / Làm lại** 100 bước.
+  - Phím tắt Space, J/K/L, ←/→, Shift+←/→, I/O, A, R, ↑/↓, Ctrl+Z.
+- **Thẻ trong Thư viện** khi đang chờ hiện "Đang chờ /find-moments" kèm các nút **Sao chép lệnh**, **Kiểm tra ngay** và **Tìm ngoại tuyến**.
+
+**Kết quả chạy thật**
+- Chạy video mẫu `speech_en_sample.mp4` qua cả pipeline (khoảng 23 giây khi đã có cache lời thoại).
+  - Loại nội dung nhận ra là `screen_recording`. Đúng, vì video mẫu là ảnh thử màu, không có mặt người.
+  - Phần phân tích ra 20 đỉnh âm thanh và 58 khoảng lặng.
+- Tôi đóng vai `/find-moments` và viết `moments.json`: app nạp **8 đề xuất**.
+- Smoke test trên trình duyệt Edge đạt **61/61**, gồm cả đủ tiêu chí "Hoàn thành khi":
+  - Chỉnh điểm vào/ra bằng cách gõ và bằng kéo tay cầm.
+  - Duyệt 2 khoảnh khắc.
+  - Tạo 1 khoảnh khắc thủ công từ đoạn bôi đen.
+  - Loại một khoảnh khắc rồi Ctrl+Z để hoàn tác.
+  - Tải lại trang thì mọi thứ còn nguyên.
+  - Kiểm tra thêm: điểm cắt không rơi vào giữa từ, tiếng Việt không bị tràn ngang.
+
+**Lỗi tìm thấy và đã sửa trong lúc test thật**
+- Bấm vào phần "lý do" của một thẻ chỉ mở rộng đoạn chữ mà không chọn thẻ, nên phím A/R tác động nhầm khoảnh khắc khác. Đã sửa: bấm ở đâu trên thẻ cũng chọn thẻ đó.
+- Đề xuất trùng lặp bị bỏ đi mà không báo gì. Giờ có thông báo "Đã bỏ X/Y đề xuất…".
+- Chạy thư viện thị giác (OpenCV/MediaPipe) ngay trong tiến trình backend thỉnh thoảng làm **hỏng cơ sở dữ liệu SQLite**. Đã chuyển sang chạy ở tiến trình con.
+
+**Kiểm thử**
+- pytest backend: **166/166 pass**.
+- Vitest: **34/34 pass**.
+- `npm run build`: pass.
+- Smoke test: **61/61 pass**.
+
+**Quyết định quan trọng** (chi tiết trong `DECISIONS.md`)
+- Timeline tự vẽ bằng canvas thay cho wavesurfer.js, vì wavesurfer phải giải mã cả file âm thanh trong trình duyệt.
+- Khoảnh khắc tạo thủ công mặc định là **đã duyệt**.
+- Bộ theo dõi chỉ tự nạp `moments.json` khi nguồn đang ở trạng thái **chờ**. Nếu bạn sửa file sau đó, hãy bấm **Kiểm tra ngay**.
+- Xem trước 9:16 tạm thời cắt ở **chính giữa**; Phase 3 sẽ tính khung hình thật.
+
+**Việc bạn nên làm khi thức dậy**
+- Chạy thật `/find-moments <id>` trong Claude Code với một video của bạn. Tôi mới chỉ tự viết `moments.json` để thử luồng.
+- Nếu muốn dùng nhà cung cấp `anthropic` / `openai`: thêm khoá vào `.env` và thử. Tôi chưa gọi API trả phí nào.

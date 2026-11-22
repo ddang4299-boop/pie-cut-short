@@ -16,7 +16,10 @@
     "no_source": "Chưa chọn video nguồn",
     "jobs": "Tác vụ",
     "jobs_running": "{{count}} đang chạy",
-    "language": "Ngôn ngữ giao diện"
+    "language": "Ngôn ngữ giao diện",
+    "save_saving": "Đang lưu…",
+    "save_saved": "Đã lưu",
+    "save_error": "Không lưu được"
   },
   "language": {
     "en": "English",
@@ -141,13 +144,83 @@
       "delete_media": "Xoá luôn các tệp media do ứng dụng tạo ra (bản xem trước, âm thanh, video đã tải lên hoặc tải về)",
       "delete_media_external": "Tệp gốc tại {{path}} sẽ không bao giờ bị xoá.",
       "deleted": "Đã xoá video nguồn.",
-      "cancel_job": "Dừng xử lý"
+      "cancel_job": "Dừng xử lý",
+      "waiting_title": "Đang chờ /find-moments",
+      "waiting_body": "Chạy lệnh này trong Claude Code. Các khoảnh khắc sẽ tự hiện ở đây khi Claude ghi xong moments.json.",
+      "copy_command": "Sao chép lệnh",
+      "command_copied": "Đã sao chép lệnh — dán vào Claude Code",
+      "command_copy_failed": "Không sao chép được. Hãy chạy lệnh này trong Claude Code: {{command}}",
+      "check_now": "Kiểm tra ngay",
+      "check_now_hint": "Tìm moments.json ngay bây giờ",
+      "find_offline": "Tìm ngoại tuyến",
+      "find_offline_hint": "Dùng thuật toán có sẵn thay thế (không dùng AI, chất lượng thấp hơn)",
+      "content_type_auto": "{{type}} (tự động)"
     },
     "moments": {
       "title": "Khoảnh khắc",
       "subtitle": "Duyệt các khoảnh khắc do AI đề xuất.",
       "empty": "Chưa có khoảnh khắc nào. Hãy nhập video ở Thư viện trước.",
-      "action": "Đến Thư viện"
+      "action": "Đến Thư viện",
+      "source": "Video nguồn",
+      "filter": "Lọc khoảnh khắc",
+      "filter_all": "Tất cả",
+      "filter_proposed": "Đề xuất",
+      "filter_approved": "Đã duyệt",
+      "filter_rejected": "Đã loại",
+      "filter_empty": "Không có khoảnh khắc nào khớp bộ lọc.",
+      "none_yet": "Chưa có khoảnh khắc nào. Bôi đen đoạn trong bản ghi hoặc bấm “Mới” để thêm.",
+      "not_ready": "Video này vẫn đang được xử lý.",
+      "sort": "Sắp xếp",
+      "sort_score": "Theo điểm",
+      "sort_time": "Theo thời gian",
+      "new_moment": "Mới",
+      "new_moment_hint": "Thêm khoảnh khắc 15 giây tại đầu phát",
+      "created": "Đã tạo khoảnh khắc",
+      "manual": "Thêm thủ công",
+      "untitled": "Khoảnh khắc chưa đặt tên",
+      "rubric_value": "{{name}}: {{value}}/10",
+      "expand": "Xem đầy đủ lý do",
+      "collapse": "Thu gọn",
+      "approve": "Duyệt",
+      "reject": "Loại",
+      "delete": "Xoá khoảnh khắc",
+      "play": "Phát",
+      "pause": "Tạm dừng",
+      "loop": "Lặp lại khoảnh khắc đang chọn",
+      "loop_short": "Lặp",
+      "preview916": "Xem trước 9:16",
+      "preview916_hint": "Hiện vùng cắt dọc dự kiến (căn giữa cho đến khi tính khung hình)",
+      "already_vertical": "Video đã ở dạng dọc — không cần cắt",
+      "no_proxy": "Video xem trước chưa sẵn sàng",
+      "undo": "Hoàn tác",
+      "redo": "Làm lại",
+      "find_again": "Tìm lại",
+      "find_again_hint": "Yêu cầu đề xuất mới (giữ lại khoảnh khắc đã duyệt và thêm thủ công)",
+      "find_again_title": "Tìm lại khoảnh khắc?",
+      "find_again_body": "Các khoảnh khắc đề xuất và đã loại sẽ được thay bằng đề xuất mới. Khoảnh khắc đã duyệt và thêm thủ công được giữ nguyên.",
+      "find_started": "Đang tìm khoảnh khắc…",
+      "minimap": "Toàn bộ video",
+      "in_point": "Vào",
+      "out_point": "Ra",
+      "set_in": "Đặt điểm vào tại đầu phát",
+      "set_out": "Đặt điểm ra tại đầu phát",
+      "length": "Độ dài {{value}}",
+      "alt_hint": "kéo; giữ Alt để tắt bắt dính",
+      "snap_off": "đã tắt bắt dính",
+      "snapped_to": "Đã bắt dính vào {{start}} → {{end}}",
+      "timeline_legend": "Xám = khoảng lặng · cam = chuyển cảnh · kéo tay cầm để cắt",
+      "title_label": "Tiêu đề",
+      "hook_label": "Câu mở đầu",
+      "select_hint": "Chọn một khoảnh khắc bên trái để xem lại.",
+      "caption_style": "Phụ đề",
+      "platform": "Nền tảng",
+      "approve_open": "Duyệt & mở Trình biên tập",
+      "approve_open_hint": "Duyệt khoảnh khắc này và biên tập thành clip",
+      "transcript": "Bản ghi lời thoại",
+      "select_to_create": "Bôi đen để tạo khoảnh khắc",
+      "create_from_selection": "Tạo khoảnh khắc",
+      "seek_here": "Nhảy tới đây",
+      "no_transcript": "Video này không có bản ghi lời thoại. Bạn vẫn có thể thêm khoảnh khắc trên dòng thời gian."
     },
     "editor": {
       "title": "Biên tập clip",
@@ -227,7 +300,8 @@
     "MOMENTS_PROVIDER_NOT_CONFIGURED": "Bộ chọn khoảnh khắc “{{provider}}” chưa được thiết lập (thiếu API key hoặc máy chủ). Hãy chọn bộ khác trong Cài đặt.",
     "MOMENTS_FEWER_THAN_WANTED": "Chỉ tìm được {{count}} khoảnh khắc. Bạn có thể tự thêm.",
     "MOMENT_NOT_FOUND": "Khoảnh khắc này không còn tồn tại.",
-    "ANALYSIS_NOT_READY": "Phần phân tích của video này chưa xong."
+    "ANALYSIS_NOT_READY": "Phần phân tích của video này chưa xong.",
+    "MOMENTS_DUPLICATES_DROPPED": "Đã bỏ {{count}}/{{total}} đề xuất: trùng với đề xuất tốt hơn, quá ngắn, hoặc đã nằm trong khoảnh khắc của bạn."
   },
   "steps": {
     "preflight": "Kiểm tra",
@@ -294,5 +368,27 @@
     "done": "Xong",
     "error": "Thất bại",
     "cancelled": "Đã huỷ"
+  },
+  "rubric": {
+    "hook_strength": "Mở đầu",
+    "coherence": "Mạch lạc",
+    "emotion": "Cảm xúc",
+    "value_density": "Mật độ giá trị",
+    "payoff": "Kết thúc"
+  },
+  "moment_status": {
+    "proposed": "Đề xuất",
+    "approved": "Đã duyệt",
+    "rejected": "Đã loại"
+  },
+  "caption_style": {
+    "bold": "Đậm",
+    "bounce": "Nảy",
+    "clean": "Tối giản"
+  },
+  "platform": {
+    "youtube_shorts": "YouTube Shorts",
+    "tiktok": "TikTok",
+    "reels": "Instagram Reels"
   }
 }

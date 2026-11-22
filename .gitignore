@@ -33,3 +33,4 @@ samples/*
 Thumbs.db
 .vscode/
 .idea/
+*.tsbuildinfo

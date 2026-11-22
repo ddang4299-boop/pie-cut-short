@@ -561,9 +561,12 @@ def step_moments(ctx: JobContext, src: Source, report: StepReporter) -> str:
     ctx.check_cancelled()
     (source_dir(src.id) / f"moments.{provider}.json").write_text(parsed.model_dump_json(indent=1), encoding="utf-8")
     report(0.9, stage="importing")
-    moments_service.import_moments(src.id, parsed, provider)
-    if len(parsed.moments) < meta.wanted[0]:
-        report.notice(errors.MOMENTS_FEWER_THAN_WANTED, count=len(parsed.moments))
+    added = moments_service.import_moments(src.id, parsed, provider)
+    count = len(parsed.moments)
+    if count < meta.wanted[0]:
+        report.notice(errors.MOMENTS_FEWER_THAN_WANTED, count=count)
+    if added < count:
+        report.notice(errors.MOMENTS_DUPLICATES_DROPPED, count=count - added, total=count)
     return "done"
 
 

@@ -1,4 +1,4 @@
-import { AlertTriangle, ChevronDown, FileText, Film, Link2, MoreHorizontal, Play, RotateCw, Sparkles, Square, Trash2 } from "lucide-react";
+import { AlertTriangle, ChevronDown, Copy, FileText, Film, Hourglass, Link2, MoreHorizontal, Play, RotateCw, Sparkles, Square, Trash2, WandSparkles } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
@@ -12,6 +12,8 @@ import {
   apiUrl,
   cancelJob,
   deleteSource,
+  findMoments,
+  importMomentsNow,
   patchSource,
   rerunSource,
   startSource,
@@ -38,6 +40,7 @@ const STATUS_DOT: Record<Source["status"], string> = {
   downloading: "bg-accent animate-pulse",
   new: "bg-white",
   processing: "bg-accent animate-pulse",
+  waiting: "bg-warning animate-pulse",
   ready: "bg-success",
   error: "bg-danger",
 };
@@ -95,12 +98,24 @@ export function SourceCard({ source, lastJob, onOpenTranscript }: { source: Sour
       return result;
     }, t("pages.library.started", { name: source.name }));
 
+  const copyCommand = async () => {
+    try {
+      await navigator.clipboard.writeText(source.find_moments_command);
+      toast.show(t("pages.library.command_copied"), "success");
+    } catch {
+      toast.show(t("pages.library.command_copy_failed", { command: source.find_moments_command }), "error");
+    }
+  };
+
   const openMoments = () => {
     setCurrentSourceId(source.id);
     navigate("/moments");
   };
 
-  const typeLabel = source.content_type ? t(`content_type.${source.content_type}`) : t("content_type.unknown");
+  const typeName = source.content_type ? t(`content_type.${source.content_type}`) : t("content_type.unknown");
+  const typeLabel =
+    source.content_type && !source.content_type_override ? t("pages.library.content_type_auto", { type: typeName }) : typeName;
+  const momentsStep = source.steps.moments;
 
   return (
     <article
@@ -250,6 +265,7 @@ export function SourceCard({ source, lastJob, onOpenTranscript }: { source: Sour
                   key: type,
                   label: t(`content_type.${type}`),
                   onSelect: () => void run(() => patchSource(source.id, { content_type: type })),
+                  icon: source.content_type_override === type ? <span className="size-1.5 rounded-full bg-accent" /> : undefined,
                 })),
                 {
                   key: "auto",
@@ -275,6 +291,62 @@ export function SourceCard({ source, lastJob, onOpenTranscript }: { source: Sour
             </div>
             <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-white/10">
               <div className="h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${job.progress * 100}%` }} />
+            </div>
+          </div>
+        )}
+
+        {/* Waiting for Claude Code (/find-moments) */}
+        {source.status === "waiting" && (
+          <div className="space-y-2 rounded-lg border border-warning/40 bg-warning/5 p-3" data-testid="waiting-panel">
+            <div className="flex items-center gap-2 text-xs font-medium text-warning">
+              <Hourglass className="size-3.5 shrink-0" />
+              {t("pages.library.waiting_title")}
+            </div>
+            <p className="text-[11px] leading-relaxed text-muted">{t("pages.library.waiting_body")}</p>
+            <div className="flex items-center gap-2">
+              <code className="min-w-0 flex-1 truncate rounded-md border border-line bg-app px-2 py-1 font-mono text-[11px] text-fg" data-testid="find-command">
+                {source.find_moments_command}
+              </code>
+              <Tooltip label={t("pages.library.copy_command")} side="top">
+                <button
+                  type="button"
+                  onClick={() => void copyCommand()}
+                  data-testid="copy-command"
+                  className="flex shrink-0 items-center gap-1.5 rounded-md bg-accent px-2.5 py-1 text-[11px] font-medium text-white hover:bg-accent/90"
+                >
+                  <Copy className="size-3" />
+                  {t("pages.library.copy_command")}
+                </button>
+              </Tooltip>
+            </div>
+            {momentsStep?.error && (
+              <div className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/5 px-2 py-1.5 text-[11px]" data-testid="moments-error">
+                <AlertTriangle className="mt-0.5 size-3 shrink-0 text-danger" />
+                <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">{translateIssue(t, momentsStep.error)}</span>
+              </div>
+            )}
+            <div className="flex flex-wrap gap-x-3 gap-y-1 pt-0.5">
+              <Tooltip label={t("pages.library.check_now_hint")} side="top">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void run(() => importMomentsNow(source.id))}
+                  className="text-[11px] text-muted underline-offset-2 hover:text-fg hover:underline disabled:opacity-50"
+                >
+                  {t("pages.library.check_now")}
+                </button>
+              </Tooltip>
+              <Tooltip label={t("pages.library.find_offline_hint")} side="top">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void run(() => findMoments(source.id, "heuristic"), t("pages.library.rerun_started"))}
+                  className="flex items-center gap-1 text-[11px] text-muted underline-offset-2 hover:text-fg hover:underline disabled:opacity-50"
+                >
+                  <WandSparkles className="size-3" />
+                  {t("pages.library.find_offline")}
+                </button>
+              </Tooltip>
             </div>
           </div>
         )}
@@ -369,12 +441,15 @@ export function SourceCard({ source, lastJob, onOpenTranscript }: { source: Sour
               </button>
             </Tooltip>
           )}
-          {source.status === "ready" && (
+          {(source.status === "ready" || source.status === "waiting") && (
             <Tooltip label={t("pages.library.open_moments")} side="top">
               <button
                 type="button"
                 onClick={openMoments}
-                className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent/90"
+                data-testid="open-moments"
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+                  source.status === "ready" ? "bg-accent text-white hover:bg-accent/90" : "border border-line text-fg hover:bg-white/5"
+                }`}
               >
                 {t("pages.library.open_moments")}
               </button>

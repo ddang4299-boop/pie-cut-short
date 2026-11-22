@@ -16,7 +16,10 @@
     "no_source": "No source selected",
     "jobs": "Jobs",
     "jobs_running": "{{count}} running",
-    "language": "Interface language"
+    "language": "Interface language",
+    "save_saving": "Saving…",
+    "save_saved": "Saved",
+    "save_error": "Couldn't save"
   },
   "language": {
     "en": "English",
@@ -141,13 +144,83 @@
       "delete_media": "Also delete the media files the app created (preview copy, audio, uploaded or downloaded video)",
       "delete_media_external": "The original file at {{path}} is never deleted.",
       "deleted": "Source deleted.",
-      "cancel_job": "Cancel processing"
+      "cancel_job": "Cancel processing",
+      "waiting_title": "Waiting for /find-moments",
+      "waiting_body": "Run this command in Claude Code. The moments appear here automatically when Claude writes moments.json.",
+      "copy_command": "Copy command",
+      "command_copied": "Command copied — paste it into Claude Code",
+      "command_copy_failed": "Couldn't copy. Run this in Claude Code: {{command}}",
+      "check_now": "Check now",
+      "check_now_hint": "Look for moments.json right away",
+      "find_offline": "Find offline",
+      "find_offline_hint": "Use the built-in heuristic instead (no AI, lower quality)",
+      "content_type_auto": "{{type}} (auto)"
     },
     "moments": {
       "title": "Moments",
       "subtitle": "Review the moments the AI proposed.",
       "empty": "No moments yet. Import a video in the Library first.",
-      "action": "Go to Library"
+      "action": "Go to Library",
+      "source": "Source video",
+      "filter": "Filter moments",
+      "filter_all": "All",
+      "filter_proposed": "Proposed",
+      "filter_approved": "Approved",
+      "filter_rejected": "Rejected",
+      "filter_empty": "No moments match this filter.",
+      "none_yet": "No moments yet. Select text in the transcript or click “New” to add one.",
+      "not_ready": "This video is still being processed.",
+      "sort": "Sort",
+      "sort_score": "By score",
+      "sort_time": "By time",
+      "new_moment": "New",
+      "new_moment_hint": "Add a 15 s moment at the playhead",
+      "created": "Moment created",
+      "manual": "Added manually",
+      "untitled": "Untitled moment",
+      "rubric_value": "{{name}}: {{value}}/10",
+      "expand": "Show full reason",
+      "collapse": "Collapse",
+      "approve": "Approve",
+      "reject": "Reject",
+      "delete": "Delete moment",
+      "play": "Play",
+      "pause": "Pause",
+      "loop": "Loop the selected moment",
+      "loop_short": "Loop",
+      "preview916": "Preview 9:16",
+      "preview916_hint": "Show the expected vertical crop (centered until reframing is computed)",
+      "already_vertical": "Already vertical — no crop needed",
+      "no_proxy": "Preview video is not ready yet",
+      "undo": "Undo",
+      "redo": "Redo",
+      "find_again": "Find again",
+      "find_again_hint": "Ask for new proposals (approved and manual moments are kept)",
+      "find_again_title": "Find moments again?",
+      "find_again_body": "Proposed and rejected moments will be replaced by new proposals. Approved and manually added moments are kept.",
+      "find_started": "Looking for moments…",
+      "minimap": "Whole video",
+      "in_point": "In",
+      "out_point": "Out",
+      "set_in": "Set the in point at the playhead",
+      "set_out": "Set the out point at the playhead",
+      "length": "Length {{value}}",
+      "alt_hint": "drag; hold Alt to turn off snapping",
+      "snap_off": "snapping off",
+      "snapped_to": "Snapped to {{start}} → {{end}}",
+      "timeline_legend": "Grey = silence · orange = scene cut · drag the handles to trim",
+      "title_label": "Title",
+      "hook_label": "Hook",
+      "select_hint": "Select a moment on the left to review it.",
+      "caption_style": "Captions",
+      "platform": "Platform",
+      "approve_open": "Approve & open Editor",
+      "approve_open_hint": "Approve this moment and edit it as a clip",
+      "transcript": "Transcript",
+      "select_to_create": "Select text to create a moment",
+      "create_from_selection": "Create moment",
+      "seek_here": "Jump here",
+      "no_transcript": "No transcript for this video. You can still add moments on the timeline."
     },
     "editor": {
       "title": "Clip Editor",
@@ -227,7 +300,8 @@
     "MOMENTS_PROVIDER_NOT_CONFIGURED": "The moment finder “{{provider}}” isn't set up (missing API key or server). Choose another one in Settings.",
     "MOMENTS_FEWER_THAN_WANTED": "Only {{count}} moments were found. You can add more by hand.",
     "MOMENT_NOT_FOUND": "This moment no longer exists.",
-    "ANALYSIS_NOT_READY": "The analysis for this video isn't ready yet."
+    "ANALYSIS_NOT_READY": "The analysis for this video isn't ready yet.",
+    "MOMENTS_DUPLICATES_DROPPED": "{{count}} of {{total}} proposals were dropped: duplicates of a better one, too short, or already covered by your moments."
   },
   "steps": {
     "preflight": "Preflight",
@@ -294,5 +368,27 @@
     "done": "Done",
     "error": "Failed",
     "cancelled": "Cancelled"
+  },
+  "rubric": {
+    "hook_strength": "Hook",
+    "coherence": "Coherence",
+    "emotion": "Emotion",
+    "value_density": "Value density",
+    "payoff": "Payoff"
+  },
+  "moment_status": {
+    "proposed": "Proposed",
+    "approved": "Approved",
+    "rejected": "Rejected"
+  },
+  "caption_style": {
+    "bold": "Bold",
+    "bounce": "Bounce",
+    "clean": "Clean"
+  },
+  "platform": {
+    "youtube_shorts": "YouTube Shorts",
+    "tiktok": "TikTok",
+    "reels": "Instagram Reels"
   }
 }
