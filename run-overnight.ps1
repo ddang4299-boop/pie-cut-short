@@ -56,10 +56,39 @@ foreach ($p in $Phases) {
               "When the phase meets its done criteria and tests pass, commit, update MORNING_REPORT.md, and create the file .autopilot/phase-$p.done containing a short summary."
 
     $attemptLog = Join-Path ".autopilot" ("phase-{0}.attempt{1}.log" -f $p, $attempt)
-    $out = & claude -p $prompt --dangerously-skip-permissions --max-turns $MaxTurns 2>&1 | Out-String
-    Set-Content -Path $attemptLog -Value $out -Encoding UTF8
+    # Stream Claude's progress live to the terminal and to the attempt log
+    Set-Content -Path $attemptLog -Value "" -Encoding UTF8
+    & claude -p $prompt --dangerously-skip-permissions --max-turns $MaxTurns --output-format stream-json --verbose 2>&1 | ForEach-Object {
+      $line = "$_"
+      Add-Content -Path $attemptLog -Value $line -Encoding UTF8
+      try {
+        $j = $line | ConvertFrom-Json -ErrorAction Stop
+        if ($j.type -eq "assistant") {
+          foreach ($c in $j.message.content) {
+            if ($c.type -eq "text" -and $c.text) {
+              Write-Host ("  [Claude] " + $c.text) -ForegroundColor Cyan
+            } elseif ($c.type -eq "tool_use") {
+              $d = ($c.input | ConvertTo-Json -Compress -Depth 3)
+              if ($d.Length -gt 160) { $d = $d.Substring(0, 160) + "..." }
+              Write-Host ("  [" + $c.name + "] " + $d) -ForegroundColor DarkGray
+            }
+          }
+        } elseif ($j.type -eq "result") {
+          Write-Host ("  [result] " + $j.subtype + "  turns=" + $j.num_turns) -ForegroundColor Green
+          if ($j.result) { Write-Host ("  " + $j.result) -ForegroundColor Green }
+        }
+      } catch {
+        if ($line.Trim()) { Write-Host ("  " + $line) -ForegroundColor Yellow }
+      }
+    }
+    # Look only at the CLI's own signals (final result, rate-limit events, non-JSON CLI errors),
+    # not at tool output: Claude may read files that quote these phrases (e.g. this script),
+    # which used to trigger false 30-minute waits.
+    $out = (Get-Content -Path $attemptLog | Where-Object {
+      $_ -match '^\s*\{"type":"(result|rate_limit_event)"' -or ($_.Trim() -and $_ -notmatch '^\s*\{')
+    }) -join "`n"
 
-    if ($out -match "(?i)usage limit|limit reached|rate limit|resets at|try again later") {
+    if ($out -match '(?i)usage limit|limit reached|hit your (usage )?limit|rate limit|resets at|try again later|"status":"rejected"') {
       $limitWaits++
       if ($limitWaits -gt $MaxLimitWaits) { Log "Too many usage-limit waits - stopping."; exit 2 }
       Log "Usage limit hit - waiting $LimitWaitMinutes min (wait #$limitWaits)."

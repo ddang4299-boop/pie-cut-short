@@ -407,7 +407,7 @@ def run_preflight(
     ffprobe_bin: str = "ffprobe",
     device_pref: str = "auto",
 ) -> dict[str, Any]:
-    path = Path(path)
+    path = Path(path).resolve()
     result: dict[str, Any] = {
         "ok": False,
         "file": {"name": path.name, "path": str(path), "size_bytes": None},

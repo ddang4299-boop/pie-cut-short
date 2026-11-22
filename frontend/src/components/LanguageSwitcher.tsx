@@ -13,7 +13,7 @@ export function LanguageSwitcher({ variant = "compact" }: { variant?: "compact" 
     <div
       role="radiogroup"
       aria-label={t("header.language")}
-      className="flex rounded-lg border border-line bg-app p-0.5"
+      className="inline-flex rounded-lg border border-line bg-app p-0.5"
     >
       {UI_LANGUAGES.map((language) => {
         const active = current === language;
