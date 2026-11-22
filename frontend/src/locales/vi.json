@@ -1,0 +1,134 @@
+{
+  "app": {
+    "name": "ShortForge",
+    "title": "ShortForge Local"
+  },
+  "nav": {
+    "main": "Điều hướng chính",
+    "library": "Thư viện",
+    "moments": "Khoảnh khắc",
+    "editor": "Biên tập",
+    "export": "Xuất video",
+    "settings": "Cài đặt"
+  },
+  "header": {
+    "current_source": "Video nguồn hiện tại",
+    "no_source": "Chưa chọn video nguồn",
+    "jobs": "Tác vụ",
+    "jobs_running": "{{count}} đang chạy",
+    "language": "Ngôn ngữ giao diện"
+  },
+  "language": {
+    "en": "English",
+    "vi": "Tiếng Việt",
+    "en_short": "EN",
+    "vi_short": "VI"
+  },
+  "backend": {
+    "checking": "Đang kiểm tra máy chủ…",
+    "online": "Máy chủ đang hoạt động",
+    "warning": "Máy chủ hoạt động, có cảnh báo",
+    "degraded": "Máy chủ cần được kiểm tra",
+    "offline": "Mất kết nối máy chủ"
+  },
+  "jobs": {
+    "title": "Tác vụ",
+    "empty": "Chưa có tác vụ nào đang chạy. Việc nhập, phân tích và xuất video sẽ hiện ở đây."
+  },
+  "system": {
+    "title": "Trạng thái hệ thống",
+    "backend": "Máy chủ",
+    "ffmpeg": "FFmpeg",
+    "device": "Thiết bị xử lý",
+    "gpu": "Card đồ hoạ",
+    "encoder": "Bộ mã hoá video ưu tiên",
+    "python": "Python",
+    "app_version": "Phiên bản ứng dụng",
+    "not_found": "Không tìm thấy",
+    "none": "Không có",
+    "memory_gb": "{{value, number(maximumFractionDigits: 1)}} GB",
+    "notices": "Thông báo",
+    "no_notices": "Mọi thứ đều ổn.",
+    "check_again": "Kiểm tra lại",
+    "start_hint": "Khởi động máy chủ từ thư mục backend:"
+  },
+  "device": {
+    "cuda": "GPU NVIDIA (CUDA)",
+    "mps": "GPU Apple (Metal)",
+    "cpu": "Chỉ dùng CPU"
+  },
+  "encoder": {
+    "h264_nvenc": "NVENC (GPU NVIDIA)",
+    "h264_videotoolbox": "VideoToolbox (Apple)",
+    "libx264": "x264 (CPU)"
+  },
+  "severity": {
+    "error": "Lỗi",
+    "warning": "Cảnh báo",
+    "info": "Thông tin"
+  },
+  "common": {
+    "retry": "Thử lại",
+    "view_log": "Xem nhật ký",
+    "hide_log": "Ẩn nhật ký",
+    "close": "Đóng",
+    "coming_soon": "Sẽ có trong bản cập nhật tới"
+  },
+  "pages": {
+    "library": {
+      "title": "Thư viện",
+      "subtitle": "Nhập video dài và theo dõi tiến trình xử lý.",
+      "drop": "Kéo thả một video dài vào đây để bắt đầu",
+      "drop_hint": "MP4, MOV, MKV hoặc WebM. Tính năng nhập video sẽ có trong bản cập nhật tới.",
+      "choose_file": "Chọn tệp"
+    },
+    "moments": {
+      "title": "Khoảnh khắc",
+      "subtitle": "Duyệt các khoảnh khắc do AI đề xuất.",
+      "empty": "Chưa có khoảnh khắc nào. Hãy nhập video ở Thư viện trước.",
+      "action": "Đến Thư viện"
+    },
+    "editor": {
+      "title": "Biên tập clip",
+      "subtitle": "Tinh chỉnh khung hình, phụ đề, câu mở đầu và giọng đọc.",
+      "empty": "Chưa mở clip nào. Hãy duyệt một khoảnh khắc để bắt đầu biên tập.",
+      "action": "Đến Khoảnh khắc"
+    },
+    "export": {
+      "title": "Xuất video",
+      "subtitle": "Kết xuất clip và xuất gói để hoàn thiện trong CapCut.",
+      "empty": "Chưa có gì để xuất. Các clip đã duyệt sẽ hiện ở đây.",
+      "action": "Đến Khoảnh khắc"
+    },
+    "settings": {
+      "title": "Cài đặt",
+      "subtitle": "Tuỳ chọn cho máy tính này.",
+      "language_title": "Ngôn ngữ giao diện",
+      "language_hint": "Áp dụng ngay và được ghi nhớ trên máy tính này.",
+      "system_title": "Hệ thống"
+    }
+  },
+  "errors": {
+    "UNKNOWN": "Lỗi không xác định ({{code}}).",
+    "BACKEND_UNREACHABLE": "Không kết nối được máy chủ. Máy chủ đã được khởi động chưa?",
+    "INTERNAL_ERROR": "Máy chủ gặp sự cố. Xem nhật ký để biết chi tiết.",
+    "NOT_FOUND": "Không tìm thấy.",
+    "VALIDATION_ERROR": "Một số giá trị không hợp lệ: {{fields}}.",
+    "FFMPEG_NOT_FOUND": "Không tìm thấy FFmpeg. Hãy cài đặt và thêm vào PATH, hoặc đặt FFMPEG_BIN trong .env.",
+    "FFPROBE_NOT_FOUND": "Không tìm thấy FFprobe. Công cụ này đi kèm FFmpeg; hãy thêm vào PATH, hoặc đặt FFPROBE_BIN trong .env.",
+    "GPU_NOT_AVAILABLE": "Không tìm thấy GPU được hỗ trợ. Ứng dụng vẫn chạy bằng CPU, chỉ chậm hơn.",
+    "DISK_SPACE_LOW": "Không đủ dung lượng ổ đĩa: cần khoảng {{needed_gb, number}} GB, chỉ còn trống {{free_gb, number}} GB.",
+    "FILE_NOT_FOUND": "Không tìm thấy tệp “{{name}}”.",
+    "FILE_EMPTY": "Tệp “{{name}}” bị trống.",
+    "PROBE_FAILED": "Không đọc được “{{name}}”. Tệp có thể bị hỏng hoặc không phải là video.",
+    "INVALID_DURATION": "Không xác định được thời lượng của video.",
+    "NO_VIDEO_STREAM": "Tệp này không chứa luồng video.",
+    "NO_AUDIO_STREAM": "Video này không có âm thanh. Bước chép lời sẽ được bỏ qua, nhưng bạn vẫn có thể tự thêm khoảnh khắc trên dòng thời gian.",
+    "VIDEO_DECODE_FAILED": "Không giải mã được luồng video ({{codec}}). Hãy thử chuyển tệp sang MP4 H.264.",
+    "AUDIO_DECODE_FAILED": "Không giải mã được luồng âm thanh ({{codec}}). Hãy thử chuyển tệp sang MP4 với âm thanh AAC.",
+    "LOW_RESOLUTION": "Độ phân giải thấp ({{width}}×{{height}}). Khung dọc sau khi cắt có thể bị mờ.",
+    "VARIABLE_FRAME_RATE": "Phát hiện tốc độ khung hình thay đổi. Bản xem trước sẽ được chuyển sang tốc độ khung hình cố định.",
+    "SOURCE_ALREADY_VERTICAL": "Video này đã ở dạng dọc nên bước đổi khung hình sẽ được bỏ qua.",
+    "VERY_LONG_VIDEO": "Video dài ({{hours, number}} giờ). Lời thoại sẽ được phân tích theo từng phần."
+  }
+}

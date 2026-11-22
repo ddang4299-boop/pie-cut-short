@@ -1,0 +1,134 @@
+{
+  "app": {
+    "name": "ShortForge",
+    "title": "ShortForge Local"
+  },
+  "nav": {
+    "main": "Main navigation",
+    "library": "Library",
+    "moments": "Moments",
+    "editor": "Editor",
+    "export": "Export",
+    "settings": "Settings"
+  },
+  "header": {
+    "current_source": "Current source",
+    "no_source": "No source selected",
+    "jobs": "Jobs",
+    "jobs_running": "{{count}} running",
+    "language": "Interface language"
+  },
+  "language": {
+    "en": "English",
+    "vi": "Tiếng Việt",
+    "en_short": "EN",
+    "vi_short": "VI"
+  },
+  "backend": {
+    "checking": "Checking backend…",
+    "online": "Backend online",
+    "warning": "Backend online, with warnings",
+    "degraded": "Backend needs attention",
+    "offline": "Backend offline"
+  },
+  "jobs": {
+    "title": "Jobs",
+    "empty": "No jobs running. Imports, analysis and renders will show up here."
+  },
+  "system": {
+    "title": "System status",
+    "backend": "Backend",
+    "ffmpeg": "FFmpeg",
+    "device": "Compute device",
+    "gpu": "Graphics card",
+    "encoder": "Preferred video encoder",
+    "python": "Python",
+    "app_version": "App version",
+    "not_found": "Not found",
+    "none": "None",
+    "memory_gb": "{{value, number(maximumFractionDigits: 1)}} GB",
+    "notices": "Notices",
+    "no_notices": "Everything looks good.",
+    "check_again": "Check again",
+    "start_hint": "Start the backend from the backend folder:"
+  },
+  "device": {
+    "cuda": "NVIDIA GPU (CUDA)",
+    "mps": "Apple GPU (Metal)",
+    "cpu": "CPU only"
+  },
+  "encoder": {
+    "h264_nvenc": "NVENC (NVIDIA GPU)",
+    "h264_videotoolbox": "VideoToolbox (Apple)",
+    "libx264": "x264 (CPU)"
+  },
+  "severity": {
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Info"
+  },
+  "common": {
+    "retry": "Retry",
+    "view_log": "View log",
+    "hide_log": "Hide log",
+    "close": "Close",
+    "coming_soon": "Coming in a later build"
+  },
+  "pages": {
+    "library": {
+      "title": "Library",
+      "subtitle": "Import long videos and follow their progress.",
+      "drop": "Drop a long video here to get started",
+      "drop_hint": "MP4, MOV, MKV or WebM. Video import arrives in the next build.",
+      "choose_file": "Choose file"
+    },
+    "moments": {
+      "title": "Moments",
+      "subtitle": "Review the moments the AI proposed.",
+      "empty": "No moments yet. Import a video in the Library first.",
+      "action": "Go to Library"
+    },
+    "editor": {
+      "title": "Clip Editor",
+      "subtitle": "Fine-tune framing, captions, hook and voice.",
+      "empty": "No clip open. Approve a moment to start editing.",
+      "action": "Go to Moments"
+    },
+    "export": {
+      "title": "Export",
+      "subtitle": "Render clips and export bundles for CapCut.",
+      "empty": "Nothing to export yet. Approved clips will appear here.",
+      "action": "Go to Moments"
+    },
+    "settings": {
+      "title": "Settings",
+      "subtitle": "Preferences for this computer.",
+      "language_title": "Interface language",
+      "language_hint": "Applies right away and is remembered on this computer.",
+      "system_title": "System"
+    }
+  },
+  "errors": {
+    "UNKNOWN": "Unexpected error ({{code}}).",
+    "BACKEND_UNREACHABLE": "Can't reach the backend. Is it running?",
+    "INTERNAL_ERROR": "Something went wrong on the backend. Check the log for details.",
+    "NOT_FOUND": "Not found.",
+    "VALIDATION_ERROR": "Some values are invalid: {{fields}}.",
+    "FFMPEG_NOT_FOUND": "FFmpeg was not found. Install it and add it to PATH, or set FFMPEG_BIN in .env.",
+    "FFPROBE_NOT_FOUND": "FFprobe was not found. It ships with FFmpeg; add it to PATH, or set FFPROBE_BIN in .env.",
+    "GPU_NOT_AVAILABLE": "No supported GPU found. Everything still works on the CPU, just slower.",
+    "DISK_SPACE_LOW": "Not enough disk space: about {{needed_gb, number}} GB needed, only {{free_gb, number}} GB free.",
+    "FILE_NOT_FOUND": "File “{{name}}” was not found.",
+    "FILE_EMPTY": "File “{{name}}” is empty.",
+    "PROBE_FAILED": "Couldn't read “{{name}}”. The file may be damaged or may not be a video.",
+    "INVALID_DURATION": "The video's duration could not be determined.",
+    "NO_VIDEO_STREAM": "This file has no video track.",
+    "NO_AUDIO_STREAM": "This video has no audio. Transcription will be skipped, but you can still add moments by hand on the timeline.",
+    "VIDEO_DECODE_FAILED": "The video track ({{codec}}) can't be decoded. Try converting the file to H.264 MP4.",
+    "AUDIO_DECODE_FAILED": "The audio track ({{codec}}) can't be decoded. Try converting the file to MP4 with AAC audio.",
+    "LOW_RESOLUTION": "Low resolution ({{width}}×{{height}}). Vertical crops may look soft.",
+    "VARIABLE_FRAME_RATE": "Variable frame rate detected. The preview copy will be converted to a constant frame rate.",
+    "SOURCE_ALREADY_VERTICAL": "This video is already vertical, so reframing will be skipped.",
+    "VERY_LONG_VIDEO": "Long video ({{hours, number}} h). The transcript will be analyzed in parts."
+  }
+}
