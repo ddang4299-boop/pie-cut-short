@@ -1,0 +1,4 @@
+Phase 1 done: ingest (upload raw body / yt-dlp URL / local path in place), immediate preflight, Start with language + notes.
+720p CFR proxy (NVENC -> libx264 fallback), faster-whisper large-v3 transcription in a child process (CUDA -> CPU fallback), caches by quick hash.
+SQLite job queue with lanes, logs, cancel, crash recovery (max 3 attempts) and temp cleanup; Library cards with 5-step stepper, Jobs drawer, transcript viewer.
+Tests: pytest 116 passed, vitest 23 passed, build ok, smoke passed incl. real upload -> transcribe (large-v3, 34 s on RTX 4060) -> delete.

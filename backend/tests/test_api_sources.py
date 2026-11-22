@@ -309,3 +309,21 @@ def test_delete_without_media_keeps_files(client, tmp_path, app_env):
 def test_unknown_source_and_job(client):
     assert client.get("/sources/src_nope").json()["code"] == "SOURCE_NOT_FOUND"
     assert client.get("/jobs/999").json()["code"] == "JOB_NOT_FOUND"
+
+
+def test_reconcile_marks_stuck_sources_for_retry(app_env):
+    with db.session() as s:
+        stuck = Source(id="src_stuck", name="stuck", origin="path", status="processing",
+                       steps={"preflight": {"state": "done", "progress": 1.0},
+                              "transcribe": {"state": "running", "progress": 0.4}})
+        busy = Source(id="src_busy", name="busy", origin="path", status="processing")
+        s.add(stuck)
+        s.add(busy)
+        s.add(Job(kind="pipeline", lane="main", source_id="src_busy", status=JOB_QUEUED))
+        s.commit()
+    assert tasks.reconcile_sources() == 1
+    stuck = tasks.load_source("src_stuck")
+    assert stuck.status == "error" and stuck.error["code"] == "JOB_FAILED"
+    assert stuck.steps["transcribe"]["state"] == "error"
+    assert stuck.steps["preflight"]["state"] == "done"
+    assert tasks.load_source("src_busy").status == "processing"

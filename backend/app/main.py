@@ -50,6 +50,7 @@ async def lifespan(_: FastAPI):
     queue = jobs.JobQueue(settings.data_path)
     tasks.register_handlers(queue)
     queue.recover()  # resume jobs interrupted by a crash/close, delete temp files
+    tasks.reconcile_sources()  # sources whose job gave up -> error (Retry in the Library)
     jobs.set_queue(queue)
     if settings.start_job_workers:
         queue.start()

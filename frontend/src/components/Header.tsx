@@ -1,18 +1,24 @@
 import { ListChecks } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { useSources } from "../state/sources";
 import { BackendStatus } from "./BackendStatus";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Tooltip } from "./Tooltip";
 
-export function Header({ onOpenJobs, runningJobs = 0 }: { onOpenJobs: () => void; runningJobs?: number }) {
+export function Header({ onOpenJobs }: { onOpenJobs: () => void }) {
   const { t } = useTranslation();
+  const { currentSource, activeJobCount: runningJobs } = useSources();
   return (
     <header className="flex h-14 shrink-0 items-center gap-4 border-b border-line bg-panel px-5">
       <div className="min-w-0 flex-1">
         <div className="text-[11px] uppercase tracking-wide text-muted">{t("header.current_source")}</div>
-        <div className="truncate text-sm text-muted" data-testid="current-source">
-          {t("header.no_source")}
+        <div
+          className={`truncate text-sm ${currentSource ? "text-fg" : "text-muted"}`}
+          data-testid="current-source"
+          title={currentSource?.name}
+        >
+          {currentSource ? currentSource.name : t("header.no_source")}
         </div>
       </div>
 

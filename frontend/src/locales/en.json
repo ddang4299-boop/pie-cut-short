@@ -33,7 +33,17 @@
   },
   "jobs": {
     "title": "Jobs",
-    "empty": "No jobs running. Imports, analysis and renders will show up here."
+    "empty": "No jobs yet. Imports, analysis and renders will show up here.",
+    "active": "Running and queued",
+    "recent": "Recent",
+    "kind_download": "Download",
+    "kind_pipeline": "Processing",
+    "deleted_source": "Deleted source",
+    "cancel": "Cancel job",
+    "cancelled_toast": "Job cancelled.",
+    "log_title": "Log for job #{{id}}",
+    "log_empty": "The log is empty.",
+    "attempt": "Attempt {{count}}"
   },
   "system": {
     "title": "System status",
@@ -72,15 +82,66 @@
     "view_log": "View log",
     "hide_log": "Hide log",
     "close": "Close",
-    "coming_soon": "Coming in a later build"
+    "coming_soon": "Coming in a later build",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "start": "Start",
+    "open": "Open",
+    "more": "More actions",
+    "loading": "Loading…"
   },
   "pages": {
     "library": {
       "title": "Library",
       "subtitle": "Import long videos and follow their progress.",
-      "drop": "Drop a long video here to get started",
-      "drop_hint": "MP4, MOV, MKV or WebM. Video import arrives in the next build.",
-      "choose_file": "Choose file"
+      "drop": "Drop a long video here",
+      "choose_file": "Choose file",
+      "drop_active": "Release to import",
+      "drop_hint": "MP4, MOV, MKV, WebM and other common formats. A quick check runs right away; processing only starts when you press Start.",
+      "location_label": "Or import from a link or a file path",
+      "location_placeholder": "https://… or D:\\Videos\\talk.mp4",
+      "location_hint": "Links are downloaded with yt-dlp. A file path on this computer is used in place, without copying.",
+      "import": "Import",
+      "uploading": "Uploading",
+      "cancel_upload": "Cancel upload",
+      "imported": "“{{name}}” imported. Check the results, then press Start.",
+      "download_queued": "Download queued. The video will appear when it is ready.",
+      "sources_title": "Sources",
+      "sources_count": "{{count}} total",
+      "empty": "No videos yet. Drop a long video above or paste a link to get started.",
+      "no_thumbnail": "No preview yet",
+      "duration": "Duration",
+      "resolution": "Resolution",
+      "file_size": "File size",
+      "fps": "{{value, number(maximumFractionDigits: 2)}} fps",
+      "language_detected": "Spoken language",
+      "in_place": "Used in place from {{path}}",
+      "content_type_hint": "Content type: click to change",
+      "moments_count": "{{approved}}/{{total}} moments approved",
+      "step_tooltip": "{{step}}: {{state}}",
+      "preflight_ok": "Ready to process",
+      "preflight_warn": "Ready, with notes",
+      "preflight_fail": "Can't be processed",
+      "start_title": "Start processing",
+      "language_label": "Spoken language",
+      "notes_label": "Notes for the AI (optional)",
+      "notes_placeholder": "e.g. focus on the funniest parts; the guest's name is Lan",
+      "started": "Processing started for “{{name}}”.",
+      "retry": "Retry from the failed step",
+      "open_moments": "Open Moments",
+      "view_transcript": "View transcript",
+      "rerun_section": "Re-run from step…",
+      "rerun_title": "Re-run from “{{step}}”?",
+      "rerun_body": "This step and every step after it will run again. Results that are already cached are reused.",
+      "rerun_confirm": "Re-run",
+      "rerun_started": "Re-run started.",
+      "delete": "Delete…",
+      "delete_title": "Delete “{{name}}”?",
+      "delete_body": "The source, its transcript and its moments will be removed from the library.",
+      "delete_media": "Also delete the media files the app created (preview copy, audio, uploaded or downloaded video)",
+      "delete_media_external": "The original file at {{path}} is never deleted.",
+      "deleted": "Source deleted.",
+      "cancel_job": "Cancel processing"
     },
     "moments": {
       "title": "Moments",
@@ -106,6 +167,14 @@
       "language_title": "Interface language",
       "language_hint": "Applies right away and is remembered on this computer.",
       "system_title": "System"
+    },
+    "transcript": {
+      "title": "Transcript",
+      "meta": "{{words, number}} words · {{model}} · {{device}}",
+      "language": "Language: {{language}}",
+      "empty": "No speech was found in this video.",
+      "hint": "Click a word to jump there in the video.",
+      "no_proxy": "The preview copy isn't ready yet."
     }
   },
   "errors": {
@@ -129,6 +198,84 @@
     "LOW_RESOLUTION": "Low resolution ({{width}}×{{height}}). Vertical crops may look soft.",
     "VARIABLE_FRAME_RATE": "Variable frame rate detected. The preview copy will be converted to a constant frame rate.",
     "SOURCE_ALREADY_VERTICAL": "This video is already vertical, so reframing will be skipped.",
-    "VERY_LONG_VIDEO": "Long video ({{hours, number}} h). The transcript will be analyzed in parts."
+    "VERY_LONG_VIDEO": "Long video ({{hours, number}} h). The transcript will be analyzed in parts.",
+    "UPLOAD_CANCELLED": "Upload cancelled.",
+    "UNSUPPORTED_FILE_TYPE": "“{{name}}” doesn't look like a video file.",
+    "INVALID_LOCATION": "Enter a web link (http/https) or the full path of a video file on this computer.",
+    "UPLOAD_FAILED": "The upload didn't finish. Please try again.",
+    "DOWNLOAD_FAILED": "The download failed: {{detail}}",
+    "DISK_FULL": "The disk is full. The job was stopped and its temporary files were removed.",
+    "SOURCE_NOT_FOUND": "This source no longer exists.",
+    "SOURCE_BUSY": "This source is busy with another job. Wait for it to finish or cancel it.",
+    "SOURCE_NOT_STARTABLE": "This source can't be processed. Check the preflight results.",
+    "INVALID_STEP": "Unknown step “{{step}}”.",
+    "JOB_NOT_FOUND": "This job no longer exists.",
+    "JOB_CANCELLED": "Cancelled. Press Start to continue where it stopped.",
+    "JOB_FAILED": "The job failed unexpectedly. Open the log for details.",
+    "STEP_NOT_AVAILABLE": "This step arrives in a later build.",
+    "PROXY_FAILED": "Couldn't create the preview copy. Open the log for details.",
+    "TRANSCRIBE_FAILED": "Transcription failed: {{detail}}",
+    "TRANSCRIBE_SKIPPED_NO_AUDIO": "No audio track, so transcription was skipped.",
+    "TRANSCRIPT_NOT_READY": "The transcript isn't ready yet.",
+    "NO_SPEECH_FOUND": "No speech was found. You can still add moments by hand.",
+    "TRANSCRIBE_CPU_FALLBACK": "The GPU couldn't be used for transcription, so the CPU was used (slower)."
+  },
+  "steps": {
+    "preflight": "Preflight",
+    "proxy": "Preview copy",
+    "transcribe": "Transcribe",
+    "analyze": "Analyze",
+    "moments": "Moments",
+    "download": "Download"
+  },
+  "step_state": {
+    "pending": "Waiting",
+    "queued": "Queued",
+    "running": "Running",
+    "done": "Done",
+    "skipped": "Skipped",
+    "error": "Error",
+    "waiting": "Waiting for you"
+  },
+  "stage": {
+    "checking": "Checking the file",
+    "encoding": "Encoding the preview copy",
+    "extracting_audio": "Extracting audio",
+    "decoding_audio": "Decoding audio",
+    "loading_model": "Loading the speech model",
+    "transcribing": "Transcribing speech"
+  },
+  "source_status": {
+    "downloading": "Downloading",
+    "new": "Ready to start",
+    "processing": "Processing",
+    "ready": "Ready",
+    "error": "Needs attention"
+  },
+  "content_type": {
+    "talking_head": "Talking head",
+    "screen_recording": "Screen recording",
+    "podcast": "Podcast",
+    "gameplay_facecam": "Gameplay + facecam",
+    "unknown": "Type not detected yet",
+    "auto": "Detect automatically"
+  },
+  "language_option": {
+    "auto": "Detect automatically",
+    "vi": "Vietnamese",
+    "en": "English",
+    "mixed": "Mixed Vietnamese and English"
+  },
+  "content_language": {
+    "vi": "Vietnamese",
+    "en": "English",
+    "mixed": "Mixed VI + EN"
+  },
+  "job_status": {
+    "queued": "Queued",
+    "running": "Running",
+    "done": "Done",
+    "error": "Failed",
+    "cancelled": "Cancelled"
   }
 }

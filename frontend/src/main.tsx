@@ -9,13 +9,19 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router";
 
 import App from "./App";
+import { ToastProvider } from "./components/Toasts";
 import { HealthProvider } from "./state/health";
+import { SourcesProvider } from "./state/sources";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <HealthProvider>
-        <App />
+        <SourcesProvider>
+          <ToastProvider>
+            <App />
+          </ToastProvider>
+        </SourcesProvider>
       </HealthProvider>
     </BrowserRouter>
   </StrictMode>,

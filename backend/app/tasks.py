@@ -27,6 +27,7 @@ from app import db, errors
 from app.config import get_settings
 from app.jobs import JobCancelled, JobContext, JobQueue
 from app.models import (
+    JOB_ACTIVE as JOB_ACTIVE_STATES,
     JOB_CANCELLED,
     SOURCE_DOWNLOADING,
     SOURCE_ERROR,
@@ -481,6 +482,35 @@ def after_cancel(job: Job) -> None:
         update_source(src.id, status=SOURCE_NEW, error=errors.issue(errors.JOB_CANCELLED))
     elif src.status == SOURCE_DOWNLOADING:
         update_source(src.id, status=SOURCE_ERROR, error=errors.issue(errors.JOB_CANCELLED))
+
+
+def reconcile_sources() -> int:
+    """At startup: a source marked processing/downloading with no queued or running job is stuck
+    (its job gave up during recovery or the DB was edited). Mark it so the user can Retry."""
+    from sqlmodel import select  # local import keeps module import light
+
+    fixed = 0
+    with db.session() as s:
+        active = {
+            j.source_id
+            for j in s.exec(select(Job).where(Job.status.in_(JOB_ACTIVE_STATES))).all()  # type: ignore[attr-defined]
+            if j.source_id
+        }
+        for src in s.exec(select(Source).where(Source.status.in_((SOURCE_PROCESSING, SOURCE_DOWNLOADING)))).all():  # type: ignore[attr-defined]
+            if src.id in active:
+                continue
+            src.status = SOURCE_ERROR
+            src.error = errors.issue(errors.JOB_FAILED)
+            steps = copy.deepcopy(src.steps or {})
+            for info in steps.values():
+                if info.get("state") in ("running", "queued"):
+                    info.update(state="error", error=errors.issue(errors.JOB_FAILED), stage=None)
+            src.steps = steps
+            src.updated_at = utcnow()
+            s.add(src)
+            fixed += 1
+        s.commit()
+    return fixed
 
 
 def register_handlers(queue: JobQueue) -> None:

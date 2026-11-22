@@ -1,6 +1,6 @@
 # Backend dependencies (Python 3.11+; developed on 3.14).
 # Install:  python -m venv .venv  &&  .venv\Scripts\pip install -r requirements.txt
-# Later phases add media/ML packages (faster-whisper, scenedetect, mediapipe, ...).
+# Later phases add more media/ML packages (scenedetect, mediapipe, ...).
 
 # --- API ---
 fastapi>=0.165,<1
@@ -8,6 +8,16 @@ uvicorn[standard]>=0.54
 pydantic>=2.14,<3
 pydantic-settings>=2.16,<3
 python-dotenv>=1.2
+
+# --- Storage ---
+sqlmodel>=0.0.50
+
+# --- Media (Phase 1) ---
+yt-dlp>=2026.10.26          # URL import; update often (sites change)
+faster-whisper>=1.2.1       # word-level transcription (pulls ctranslate2 + av)
+# CUDA runtime DLLs for ctranslate2 on NVIDIA GPUs (no system CUDA install needed).
+nvidia-cublas-cu12>=12.9 ; sys_platform == "win32" or sys_platform == "linux"
+nvidia-cudnn-cu12>=9.10,<10 ; sys_platform == "win32" or sys_platform == "linux"
 
 # --- Tests ---
 pytest>=9.2

@@ -33,7 +33,17 @@
   },
   "jobs": {
     "title": "Tác vụ",
-    "empty": "Chưa có tác vụ nào đang chạy. Việc nhập, phân tích và xuất video sẽ hiện ở đây."
+    "empty": "Chưa có tác vụ nào. Việc nhập, phân tích và xuất video sẽ hiện ở đây.",
+    "active": "Đang chạy và đang chờ",
+    "recent": "Gần đây",
+    "kind_download": "Tải về",
+    "kind_pipeline": "Xử lý",
+    "deleted_source": "Nguồn đã bị xoá",
+    "cancel": "Huỷ tác vụ",
+    "cancelled_toast": "Đã huỷ tác vụ.",
+    "log_title": "Nhật ký tác vụ #{{id}}",
+    "log_empty": "Nhật ký đang trống.",
+    "attempt": "Lần chạy thứ {{count}}"
   },
   "system": {
     "title": "Trạng thái hệ thống",
@@ -72,15 +82,66 @@
     "view_log": "Xem nhật ký",
     "hide_log": "Ẩn nhật ký",
     "close": "Đóng",
-    "coming_soon": "Sẽ có trong bản cập nhật tới"
+    "coming_soon": "Sẽ có trong bản cập nhật tới",
+    "cancel": "Huỷ",
+    "delete": "Xoá",
+    "start": "Bắt đầu",
+    "open": "Mở",
+    "more": "Thao tác khác",
+    "loading": "Đang tải…"
   },
   "pages": {
     "library": {
       "title": "Thư viện",
       "subtitle": "Nhập video dài và theo dõi tiến trình xử lý.",
-      "drop": "Kéo thả một video dài vào đây để bắt đầu",
-      "drop_hint": "MP4, MOV, MKV hoặc WebM. Tính năng nhập video sẽ có trong bản cập nhật tới.",
-      "choose_file": "Chọn tệp"
+      "drop": "Kéo thả một video dài vào đây",
+      "choose_file": "Chọn tệp",
+      "drop_active": "Thả ra để nhập video",
+      "drop_hint": "MP4, MOV, MKV, WebM và các định dạng phổ biến khác. Ứng dụng kiểm tra nhanh ngay lập tức; chỉ bắt đầu xử lý khi bạn bấm Bắt đầu.",
+      "location_label": "Hoặc nhập từ đường link hay đường dẫn tệp",
+      "location_placeholder": "https://… hoặc D:\\Videos\\buoi-noi-chuyen.mp4",
+      "location_hint": "Đường link được tải về bằng yt-dlp. Đường dẫn tệp trên máy này được dùng trực tiếp, không sao chép.",
+      "import": "Nhập",
+      "uploading": "Đang tải lên",
+      "cancel_upload": "Huỷ tải lên",
+      "imported": "Đã nhập “{{name}}”. Xem kết quả kiểm tra rồi bấm Bắt đầu.",
+      "download_queued": "Đã xếp lịch tải về. Video sẽ xuất hiện khi tải xong.",
+      "sources_title": "Video nguồn",
+      "sources_count": "Tổng cộng {{count}}",
+      "empty": "Chưa có video nào. Kéo thả một video dài vào ô phía trên hoặc dán đường link để bắt đầu.",
+      "no_thumbnail": "Chưa có ảnh xem trước",
+      "duration": "Thời lượng",
+      "resolution": "Độ phân giải",
+      "file_size": "Dung lượng tệp",
+      "fps": "{{value, number(maximumFractionDigits: 2)}} khung/giây",
+      "language_detected": "Ngôn ngữ nói",
+      "in_place": "Dùng trực tiếp từ {{path}}",
+      "content_type_hint": "Loại nội dung: bấm để đổi",
+      "moments_count": "Đã duyệt {{approved}}/{{total}} khoảnh khắc",
+      "step_tooltip": "{{step}}: {{state}}",
+      "preflight_ok": "Sẵn sàng xử lý",
+      "preflight_warn": "Sẵn sàng, có lưu ý",
+      "preflight_fail": "Không thể xử lý",
+      "start_title": "Bắt đầu xử lý",
+      "language_label": "Ngôn ngữ nói trong video",
+      "notes_label": "Ghi chú cho AI (không bắt buộc)",
+      "notes_placeholder": "Ví dụ: ưu tiên đoạn hài hước nhất; khách mời tên là Lan",
+      "started": "Đã bắt đầu xử lý “{{name}}”.",
+      "retry": "Chạy lại từ bước bị lỗi",
+      "open_moments": "Mở Khoảnh khắc",
+      "view_transcript": "Xem lời thoại",
+      "rerun_section": "Chạy lại từ bước…",
+      "rerun_title": "Chạy lại từ bước “{{step}}”?",
+      "rerun_body": "Bước này và mọi bước sau nó sẽ chạy lại. Kết quả đã lưu trong bộ nhớ đệm sẽ được dùng lại.",
+      "rerun_confirm": "Chạy lại",
+      "rerun_started": "Đã bắt đầu chạy lại.",
+      "delete": "Xoá…",
+      "delete_title": "Xoá “{{name}}”?",
+      "delete_body": "Video nguồn, lời thoại và các khoảnh khắc của nó sẽ bị gỡ khỏi thư viện.",
+      "delete_media": "Xoá luôn các tệp media do ứng dụng tạo ra (bản xem trước, âm thanh, video đã tải lên hoặc tải về)",
+      "delete_media_external": "Tệp gốc tại {{path}} sẽ không bao giờ bị xoá.",
+      "deleted": "Đã xoá video nguồn.",
+      "cancel_job": "Dừng xử lý"
     },
     "moments": {
       "title": "Khoảnh khắc",
@@ -106,6 +167,14 @@
       "language_title": "Ngôn ngữ giao diện",
       "language_hint": "Áp dụng ngay và được ghi nhớ trên máy tính này.",
       "system_title": "Hệ thống"
+    },
+    "transcript": {
+      "title": "Lời thoại",
+      "meta": "{{words, number}} từ · {{model}} · {{device}}",
+      "language": "Ngôn ngữ: {{language}}",
+      "empty": "Không tìm thấy lời nói nào trong video này.",
+      "hint": "Bấm vào một từ để nhảy tới đoạn đó trong video.",
+      "no_proxy": "Bản xem trước chưa sẵn sàng."
     }
   },
   "errors": {
@@ -129,6 +198,84 @@
     "LOW_RESOLUTION": "Độ phân giải thấp ({{width}}×{{height}}). Khung dọc sau khi cắt có thể bị mờ.",
     "VARIABLE_FRAME_RATE": "Phát hiện tốc độ khung hình thay đổi. Bản xem trước sẽ được chuyển sang tốc độ khung hình cố định.",
     "SOURCE_ALREADY_VERTICAL": "Video này đã ở dạng dọc nên bước đổi khung hình sẽ được bỏ qua.",
-    "VERY_LONG_VIDEO": "Video dài ({{hours, number}} giờ). Lời thoại sẽ được phân tích theo từng phần."
+    "VERY_LONG_VIDEO": "Video dài ({{hours, number}} giờ). Lời thoại sẽ được phân tích theo từng phần.",
+    "UPLOAD_CANCELLED": "Đã huỷ tải lên.",
+    "UNSUPPORTED_FILE_TYPE": "“{{name}}” có vẻ không phải là tệp video.",
+    "INVALID_LOCATION": "Hãy nhập đường link (http/https) hoặc đường dẫn đầy đủ tới một tệp video trên máy này.",
+    "UPLOAD_FAILED": "Tải lên chưa hoàn tất. Vui lòng thử lại.",
+    "DOWNLOAD_FAILED": "Tải về thất bại: {{detail}}",
+    "DISK_FULL": "Ổ đĩa đã đầy. Tác vụ đã dừng và các tệp tạm đã được xoá.",
+    "SOURCE_NOT_FOUND": "Video nguồn này không còn tồn tại.",
+    "SOURCE_BUSY": "Video nguồn đang bận với một tác vụ khác. Hãy chờ tác vụ đó xong hoặc huỷ nó.",
+    "SOURCE_NOT_STARTABLE": "Không thể xử lý video nguồn này. Hãy xem kết quả kiểm tra.",
+    "INVALID_STEP": "Không có bước “{{step}}”.",
+    "JOB_NOT_FOUND": "Tác vụ này không còn tồn tại.",
+    "JOB_CANCELLED": "Đã huỷ. Bấm Bắt đầu để chạy tiếp từ chỗ đã dừng.",
+    "JOB_FAILED": "Tác vụ gặp lỗi ngoài dự kiến. Mở nhật ký để xem chi tiết.",
+    "STEP_NOT_AVAILABLE": "Bước này sẽ có trong bản cập nhật sau.",
+    "PROXY_FAILED": "Không tạo được bản xem trước. Mở nhật ký để xem chi tiết.",
+    "TRANSCRIBE_FAILED": "Chép lời thất bại: {{detail}}",
+    "TRANSCRIBE_SKIPPED_NO_AUDIO": "Video không có âm thanh nên đã bỏ qua bước chép lời.",
+    "TRANSCRIPT_NOT_READY": "Lời thoại chưa sẵn sàng.",
+    "NO_SPEECH_FOUND": "Không tìm thấy lời nói. Bạn vẫn có thể tự thêm khoảnh khắc.",
+    "TRANSCRIBE_CPU_FALLBACK": "Không dùng được GPU để chép lời nên đã chuyển sang CPU (chậm hơn)."
+  },
+  "steps": {
+    "preflight": "Kiểm tra",
+    "proxy": "Bản xem trước",
+    "transcribe": "Chép lời",
+    "analyze": "Phân tích",
+    "moments": "Khoảnh khắc",
+    "download": "Tải về"
+  },
+  "step_state": {
+    "pending": "Đang chờ",
+    "queued": "Trong hàng đợi",
+    "running": "Đang chạy",
+    "done": "Xong",
+    "skipped": "Bỏ qua",
+    "error": "Lỗi",
+    "waiting": "Chờ bạn thao tác"
+  },
+  "stage": {
+    "checking": "Đang kiểm tra tệp",
+    "encoding": "Đang tạo bản xem trước",
+    "extracting_audio": "Đang tách âm thanh",
+    "decoding_audio": "Đang giải mã âm thanh",
+    "loading_model": "Đang nạp mô hình nhận dạng giọng nói",
+    "transcribing": "Đang chép lời"
+  },
+  "source_status": {
+    "downloading": "Đang tải về",
+    "new": "Sẵn sàng bắt đầu",
+    "processing": "Đang xử lý",
+    "ready": "Hoàn tất",
+    "error": "Cần kiểm tra"
+  },
+  "content_type": {
+    "talking_head": "Người nói trực diện",
+    "screen_recording": "Quay màn hình",
+    "podcast": "Podcast",
+    "gameplay_facecam": "Chơi game + facecam",
+    "unknown": "Chưa nhận diện loại nội dung",
+    "auto": "Tự nhận diện"
+  },
+  "language_option": {
+    "auto": "Tự nhận diện",
+    "vi": "Tiếng Việt",
+    "en": "Tiếng Anh",
+    "mixed": "Xen kẽ Việt và Anh"
+  },
+  "content_language": {
+    "vi": "Tiếng Việt",
+    "en": "Tiếng Anh",
+    "mixed": "Xen kẽ Việt + Anh"
+  },
+  "job_status": {
+    "queued": "Trong hàng đợi",
+    "running": "Đang chạy",
+    "done": "Xong",
+    "error": "Thất bại",
+    "cancelled": "Đã huỷ"
   }
 }

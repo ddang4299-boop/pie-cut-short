@@ -162,3 +162,18 @@ def test_workers_process_jobs_in_background(q):
     q.start()
     q.enqueue("demo")
     assert done.wait(5)
+
+
+def test_recover_gives_up_after_max_attempts(q):
+    q.register("demo", lambda ctx: None)
+    job = q.enqueue("demo")
+    with db.session() as s:
+        row = s.get(Job, job.id)
+        row.status = JOB_RUNNING
+        row.attempts = jobs.MAX_ATTEMPTS  # crashed the app every time it ran
+        s.add(row)
+        s.commit()
+    assert q.recover() == 0
+    row = _job(job.id)
+    assert row.status == JOB_ERROR and row.error["code"] == errors.JOB_FAILED.code
+    assert q.run_next() is None

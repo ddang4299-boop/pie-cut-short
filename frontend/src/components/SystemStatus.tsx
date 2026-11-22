@@ -9,9 +9,9 @@ import { LEVEL_DOT } from "./BackendStatus";
 import { ErrorState, Skeleton } from "./states";
 import { Tooltip } from "./Tooltip";
 
-const START_COMMAND = "cd backend && uvicorn app.main:app --reload";
+export const START_COMMAND = "cd backend && uvicorn app.main:app --reload";
 
-const SEVERITY_BADGE: Record<Severity, string> = {
+export const SEVERITY_BADGE: Record<Severity, string> = {
   error: "bg-danger/15 text-danger",
   warning: "bg-warning/15 text-warning",
   info: "bg-white/10 text-muted",

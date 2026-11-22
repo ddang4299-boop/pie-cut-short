@@ -32,6 +32,7 @@ log = logging.getLogger("shortforge.jobs")
 LANES = ("main", "download")
 PROGRESS_WRITE_INTERVAL = 0.5  # seconds
 TEMP_PATTERNS = ("*.tmp", "*.part", "*.tmp.*", "*.ytdl")
+MAX_ATTEMPTS = 3  # a job interrupted this many times is not resumed again
 
 Handler = Callable[["JobContext"], None]
 
@@ -124,14 +125,24 @@ class JobQueue:
         self.handlers[kind] = handler
 
     def recover(self) -> int:
-        """Re-queue jobs interrupted by a crash or app close; delete leftover temp files."""
+        """Re-queue jobs interrupted by a crash or app close; delete leftover temp files.
+
+        A job that was already started MAX_ATTEMPTS times is marked failed instead, so a job that
+        crashes the whole process can't loop forever across restarts.
+        """
         count = 0
         with db.session() as s:
             for job in s.exec(select(Job).where(Job.status == JOB_RUNNING)).all():
-                job.status = JOB_QUEUED
+                if job.attempts >= MAX_ATTEMPTS:
+                    job.status = JOB_ERROR
+                    job.error = errors.issue(errors.JOB_FAILED)
+                    job.finished_at = utcnow()
+                    log.warning("job %s gave up after %d attempts", job.id, job.attempts)
+                else:
+                    job.status = JOB_QUEUED
+                    count += 1
                 job.step = None
                 s.add(job)
-                count += 1
             s.commit()
         removed = cleanup_temp_files(self.data_dir)
         if count or removed:
