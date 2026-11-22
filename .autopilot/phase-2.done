@@ -1,0 +1,4 @@
+Phase 2 done: analyze (ebur128 loudness, silences, scene cuts, waveform) + content type in a vision child process; moments providers claude_code/anthropic/openai/ollama/heuristic with rescoring, snapping, dedupe.
+Moments Review: list/filter/sort, player limited to the moment, minimap + canvas timeline with snapping handles, transcript selection -> manual moment, autosave 500 ms, undo/redo 100, shortcuts.
+Real run: sample -> waiting -> moments.json (8 proposals) -> adjust in/out, approve 2, create 1, reload: all persisted.
+Tests: pytest 166 passed, vitest 34 passed, build ok, smoke 61/61 passed.
