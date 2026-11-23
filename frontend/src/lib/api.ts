@@ -1,3 +1,5 @@
+import type { CropFit, CropMode, Easing, Keyframe, Region, Segment } from "./edl";
+
 /** Thin fetch wrapper. The backend always answers errors as {code, severity, params}. */
 
 export type Severity = "error" | "warning" | "info";
@@ -347,3 +349,56 @@ export const findMoments = (id: string, provider?: LlmProvider) =>
 export const importMomentsNow = (id: string) => apiSend<Source>("POST", `/sources/${id}/moments/import`);
 export const getSettings = () => apiGet<AppSettings>("/settings");
 export const patchSettings = (body: Partial<Omit<AppSettings, "env" | "effective_llm_provider">>) => apiSend<AppSettings>("PATCH", "/settings", body);
+
+// --- Clips (Phase 3) --------------------------------------------------------
+
+export type ClipStatus = "draft" | "review" | "approved" | "rendered";
+export type WorkState = "pending" | "queued" | "running" | "done" | "error";
+export interface WorkStep {
+  state: WorkState;
+  error: ApiIssue | null;
+  info: Record<string, unknown> | null;
+}
+
+export interface Edl {
+  id: string;
+  source_id: string;
+  moment_id: number | null;
+  segments: Segment[];
+  crop: { mode: CropMode; easing: Easing; fit: CropFit; keyframes: Keyframe[]; split: { top: Region; bottom: Region; ratio: number } | null };
+  captions: { enabled: boolean; style: CaptionStyle; position_y: number; words_per_page: number; font_size: number; words: unknown[] };
+  hook_text: { enabled: boolean; text: string; start: number; end: number; position_y: number };
+  progress_bar: { enabled: boolean; color: string };
+  voiceover: { enabled: boolean; script: string; voice_id: string; audio_path: string | null; start: number; duck_db: number };
+  audio: { normalize_lufs: number; isolate_voice: boolean; volume_db: number };
+  platform: Platform;
+  output: { w: number; h: number; fps: number };
+  status: ClipStatus;
+}
+export type EdlSection = Exclude<keyof Edl, "id" | "source_id" | "moment_id" | "status">;
+
+export interface ClipSummary {
+  id: string;
+  source_id: string;
+  moment_id: number | null;
+  status: ClipStatus;
+  duration: number;
+  title: string;
+  busy: boolean;
+  moment: Moment | null;
+  work: { prepare: WorkStep; reframe: WorkStep; crop_user_edited: boolean; crop_edits: number };
+  crop_mode?: CropMode;
+  platform?: Platform;
+  created_at: string | null;
+  updated_at: string | null;
+}
+export interface Clip extends ClipSummary {
+  edl: Edl;
+}
+
+export const listClips = (sourceId: string) => apiGet<ClipSummary[]>(`/sources/${sourceId}/clips`);
+export const getClip = (id: string) => apiGet<Clip>(`/clips/${id}`);
+export const openMomentClip = (momentId: number) => apiSend<Clip>("POST", `/moments/${momentId}/clip`);
+export const patchClip = (id: string, body: { edl?: Partial<Pick<Edl, EdlSection>>; status?: ClipStatus }) =>
+  apiSend<Clip>("PATCH", `/clips/${id}`, body);
+export const reframeClip = (id: string, mode?: CropMode) => apiSend<Clip>("POST", `/clips/${id}/reframe`, mode ? { mode } : {});

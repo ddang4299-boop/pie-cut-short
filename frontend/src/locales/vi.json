@@ -46,7 +46,8 @@
     "cancelled_toast": "Đã huỷ tác vụ.",
     "log_title": "Nhật ký tác vụ #{{id}}",
     "log_empty": "Nhật ký đang trống.",
-    "attempt": "Lần chạy thứ {{count}}"
+    "attempt": "Lần chạy thứ {{count}}",
+    "kind_clip": "Căn khung clip"
   },
   "system": {
     "title": "Trạng thái hệ thống",
@@ -220,13 +221,131 @@
       "select_to_create": "Bôi đen để tạo khoảnh khắc",
       "create_from_selection": "Tạo khoảnh khắc",
       "seek_here": "Nhảy tới đây",
-      "no_transcript": "Video này không có bản ghi lời thoại. Bạn vẫn có thể thêm khoảnh khắc trên dòng thời gian."
+      "no_transcript": "Video này không có bản ghi lời thoại. Bạn vẫn có thể thêm khoảnh khắc trên dòng thời gian.",
+      "prev_frame": "Khung hình trước",
+      "next_frame": "Khung hình sau"
     },
     "editor": {
       "title": "Biên tập clip",
       "subtitle": "Tinh chỉnh khung hình, phụ đề, câu mở đầu và giọng đọc.",
       "empty": "Chưa mở clip nào. Hãy duyệt một khoảnh khắc để bắt đầu biên tập.",
-      "action": "Đến Khoảnh khắc"
+      "action": "Đến Khoảnh khắc",
+      "pick_subtitle": "Chọn một clip để chỉnh sửa. Clip được tạo khi bạn duyệt một khoảnh khắc.",
+      "no_clips": "Nguồn này chưa có clip nào. Hãy duyệt một khoảnh khắc trước.",
+      "back": "Khoảnh khắc",
+      "back_hint": "Quay lại Khoảnh khắc, đúng vị trí trước đó",
+      "inspector": "Bảng thuộc tính",
+      "safe_zones": "Vùng an toàn",
+      "safe_zones_hint": "Làm mờ các vùng bị nút và chữ của nền tảng che",
+      "to_start": "Về đầu clip",
+      "split_segment": "Cắt đoạn tại đầu phát",
+      "split_segment_short": "Cắt",
+      "remove_segment": "Xoá đoạn đang chọn (jump cut)",
+      "remove_segment_short": "Xoá",
+      "last_segment": "Clip cần ít nhất một đoạn.",
+      "reframe_done": "Đã cập nhật khung hình.",
+      "reframe_failed": "Tự động căn khung thất bại. Giữ nguyên khung hiện tại.",
+      "recompute": "Tính lại tự động",
+      "recompute_hint": "Phân tích lại video và thay thế các keyframe",
+      "recompute_title": "Tính lại khung hình?",
+      "recompute_body": "Thao tác này sẽ thay các keyframe bạn chỉnh tay bằng keyframe tự động mới. Bạn có thể hoàn tác.",
+      "mode": "Chế độ khung hình",
+      "mode_name": {
+        "auto": "Tự động",
+        "manual": "Thủ công",
+        "split": "Chia đôi",
+        "cursor": "Theo chuột"
+      },
+      "mode_hint": {
+        "auto": "Bám theo khuôn mặt hoặc người đang nói",
+        "manual": "Tự đặt khung cắt bằng keyframe",
+        "split": "Hai vùng nguồn xếp trên và dưới",
+        "cursor": "Bám theo con trỏ chuột (quay màn hình)"
+      },
+      "method": {
+        "face": "Đang bám theo khuôn mặt chính",
+        "active_speaker": "Đang bám theo người đang nói",
+        "person": "Đang bám theo người được phát hiện",
+        "center": "Không tìm thấy chủ thể: cắt giữa khung",
+        "facecam_split": "Tìm thấy facecam: bố cục chia đôi",
+        "already_vertical": "Nguồn đã là video dọc: giữ nguyên khung",
+        "cursor": "Đang bám theo con trỏ chuột",
+        "blur_fallback": "Hiếm khi thấy con trỏ: hiện cả khung trên nền làm mờ"
+      },
+      "found_ratio": "Tìm thấy chủ thể trong {{value}} số khung hình",
+      "kept_manual": "Bạn đã chỉnh khung trong lúc đang tính, nên giữ nguyên phiên bản của bạn.",
+      "preparing": "Đang cắt thô…",
+      "reframing": "Đang tính khung hình…",
+      "reframe_pending": "Chưa tính khung hình",
+      "split": "Bố cục chia đôi",
+      "split_hint": "Kéo một vùng để di chuyển, kéo góc để đổi cỡ, hoặc vẽ lại.",
+      "split_ratio": "Chiều cao khung trên",
+      "split_top": "Trên",
+      "split_bottom": "Dưới",
+      "draw_top": "Vẽ khung trên",
+      "draw_bottom": "Vẽ khung dưới",
+      "drawing_top": "Kéo trên video nguồn để vẽ vùng trên. Esc để huỷ.",
+      "drawing_bottom": "Kéo trên video nguồn để vẽ vùng dưới. Esc để huỷ.",
+      "view_hint": {
+        "crop": "Kéo khung để di chuyển, cuộn chuột để phóng to. Keyframe được đặt tại đầu phát.",
+        "split": "Di chuyển hoặc đổi cỡ hai vùng trên video nguồn.",
+        "blur": "Cả khung hình trên nền làm mờ. Chuyển Vừa khung sang Lấp đầy để cắt."
+      },
+      "fit": "Vừa khung",
+      "fit_hint": "Lấp đầy cắt về 9:16; Làm mờ hiện cả khung trên bản sao làm mờ",
+      "fit_name": {
+        "fill": "Lấp đầy",
+        "blur": "Làm mờ"
+      },
+      "fit_blur_note": "Nền làm mờ: hiện toàn bộ khung hình",
+      "easing": "Chuyển động",
+      "easing_name": {
+        "linear": "Tuyến tính",
+        "ease_in_out": "Mượt đầu và cuối"
+      },
+      "keyframes": "Keyframe ({{count}})",
+      "keyframes_hint": "x, y = tâm khung cắt (0–1), zoom 1 = khung lớn nhất",
+      "add_keyframe": "Thêm keyframe tại đầu phát",
+      "add_keyframe_short": "Keyframe",
+      "remove_keyframe": "Xoá keyframe",
+      "keyframe_at": "Keyframe tại {{time}}",
+      "kf_time": "Thời điểm",
+      "kf_zoom": "Thu phóng",
+      "motion": "Chuyển động",
+      "audio_original": "Âm thanh gốc",
+      "volume": "Âm lượng",
+      "db": "{{value}} dB",
+      "target_lufs": "Độ to mục tiêu (LUFS)",
+      "target_lufs_hint": "Các nền tảng phát video ngắn ở khoảng −14 LUFS",
+      "isolate": "Tách giọng nói",
+      "isolate_hint": "Làm sạch âm thanh gốc bằng ElevenLabs (tốn credit, sẽ hỏi trước)",
+      "needs_elevenlabs": "Cần khoá ElevenLabs",
+      "ducking": "Giảm nhạc nền",
+      "duck_db": "Giảm âm thanh gốc khi có lồng tiếng",
+      "duck_hint": "Âm thanh gốc nhỏ đi bao nhiêu khi lồng tiếng phát",
+      "duck_note": "Có hiệu lực khi đã thêm lồng tiếng (thẻ Giọng nói).",
+      "tab": {
+        "framing": "Khung hình",
+        "captions": "Phụ đề",
+        "hook": "Hook",
+        "voice": "Giọng nói",
+        "audio": "Âm thanh",
+        "export": "Xuất"
+      },
+      "later": {
+        "captions": "Kiểu phụ đề và chỉnh sửa phụ đề có trong bản cập nhật tiếp theo.",
+        "hook": "Chỉnh sửa chữ hook có cùng với phụ đề.",
+        "voice": "Lồng tiếng ElevenLabs có trong bản cập nhật sau.",
+        "export": "Tính năng render có trong bản cập nhật sau."
+      },
+      "track": {
+        "video": "Video",
+        "captions": "Phụ đề",
+        "hook": "Hook",
+        "voiceover": "Lồng tiếng",
+        "audio": "Âm thanh",
+        "crop": "Khung cắt"
+      }
     },
     "export": {
       "title": "Xuất video",
@@ -301,7 +420,11 @@
     "MOMENTS_FEWER_THAN_WANTED": "Chỉ tìm được {{count}} khoảnh khắc. Bạn có thể tự thêm.",
     "MOMENT_NOT_FOUND": "Khoảnh khắc này không còn tồn tại.",
     "ANALYSIS_NOT_READY": "Phần phân tích của video này chưa xong.",
-    "MOMENTS_DUPLICATES_DROPPED": "Đã bỏ {{count}}/{{total}} đề xuất: trùng với đề xuất tốt hơn, quá ngắn, hoặc đã nằm trong khoảnh khắc của bạn."
+    "MOMENTS_DUPLICATES_DROPPED": "Đã bỏ {{count}}/{{total}} đề xuất: trùng với đề xuất tốt hơn, quá ngắn, hoặc đã nằm trong khoảnh khắc của bạn.",
+    "CLIP_NOT_FOUND": "Clip này không còn tồn tại.",
+    "CLIP_BUSY": "Clip này vẫn đang được xử lý. Hãy thử lại sau giây lát.",
+    "PREPARE_FAILED": "Không cắt được clip từ nguồn: {{detail}}",
+    "REFRAME_FAILED": "Tự động căn khung thất bại: {{detail}}"
   },
   "steps": {
     "preflight": "Kiểm tra",
@@ -390,5 +513,11 @@
     "youtube_shorts": "YouTube Shorts",
     "tiktok": "TikTok",
     "reels": "Instagram Reels"
+  },
+  "clip_status": {
+    "draft": "Nháp",
+    "review": "Đang xem lại",
+    "approved": "Đã duyệt",
+    "rendered": "Đã render"
   }
 }

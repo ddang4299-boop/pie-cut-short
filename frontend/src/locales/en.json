@@ -46,7 +46,8 @@
     "cancelled_toast": "Job cancelled.",
     "log_title": "Log for job #{{id}}",
     "log_empty": "The log is empty.",
-    "attempt": "Attempt {{count}}"
+    "attempt": "Attempt {{count}}",
+    "kind_clip": "Clip framing"
   },
   "system": {
     "title": "System status",
@@ -220,13 +221,131 @@
       "select_to_create": "Select text to create a moment",
       "create_from_selection": "Create moment",
       "seek_here": "Jump here",
-      "no_transcript": "No transcript for this video. You can still add moments on the timeline."
+      "no_transcript": "No transcript for this video. You can still add moments on the timeline.",
+      "prev_frame": "Previous frame",
+      "next_frame": "Next frame"
     },
     "editor": {
       "title": "Clip Editor",
       "subtitle": "Fine-tune framing, captions, hook and voice.",
       "empty": "No clip open. Approve a moment to start editing.",
-      "action": "Go to Moments"
+      "action": "Go to Moments",
+      "pick_subtitle": "Pick a clip to edit. Clips are created when you approve a moment.",
+      "no_clips": "No clips yet for this source. Approve a moment first.",
+      "back": "Moments",
+      "back_hint": "Back to Moments, at the same position",
+      "inspector": "Inspector",
+      "safe_zones": "Safe zones",
+      "safe_zones_hint": "Dim the areas covered by the platform's buttons and captions",
+      "to_start": "Go to start",
+      "split_segment": "Split the segment at the playhead",
+      "split_segment_short": "Split",
+      "remove_segment": "Remove the selected segment (jump cut)",
+      "remove_segment_short": "Remove",
+      "last_segment": "A clip needs at least one segment.",
+      "reframe_done": "Framing updated.",
+      "reframe_failed": "Automatic framing failed. The current framing is kept.",
+      "recompute": "Recompute automatically",
+      "recompute_hint": "Analyze the video again and replace the keyframes",
+      "recompute_title": "Recompute the framing?",
+      "recompute_body": "This replaces your manual keyframes with new automatic ones. You can undo it.",
+      "mode": "Framing mode",
+      "mode_name": {
+        "auto": "Auto",
+        "manual": "Manual",
+        "split": "Split",
+        "cursor": "Cursor"
+      },
+      "mode_hint": {
+        "auto": "Follow the face or the active speaker",
+        "manual": "Place the crop yourself with keyframes",
+        "split": "Two source regions stacked top and bottom",
+        "cursor": "Follow the mouse cursor (screen recordings)"
+      },
+      "method": {
+        "face": "Following the main face",
+        "active_speaker": "Following the active speaker",
+        "person": "Following a detected person",
+        "center": "No subject found: centered crop",
+        "facecam_split": "Facecam found: split layout",
+        "already_vertical": "Source is already vertical: framing kept",
+        "cursor": "Following the mouse cursor",
+        "blur_fallback": "Cursor rarely visible: whole frame on a blurred background"
+      },
+      "found_ratio": "Subject found in {{value}} of frames",
+      "kept_manual": "You edited the framing while it was computing, so your version was kept.",
+      "preparing": "Preparing the rough cut…",
+      "reframing": "Computing the framing…",
+      "reframe_pending": "Framing not computed yet",
+      "split": "Split layout",
+      "split_hint": "Drag a region to move it, the corner to resize it, or draw it again.",
+      "split_ratio": "Top panel height",
+      "split_top": "Top",
+      "split_bottom": "Bottom",
+      "draw_top": "Draw top",
+      "draw_bottom": "Draw bottom",
+      "drawing_top": "Drag on the source video to draw the top region. Esc cancels.",
+      "drawing_bottom": "Drag on the source video to draw the bottom region. Esc cancels.",
+      "view_hint": {
+        "crop": "Drag the box to move the framing, scroll to zoom. A keyframe is set at the playhead.",
+        "split": "Move or resize the two regions on the source video.",
+        "blur": "Whole frame on a blurred background. Switch Fit to Fill to crop instead."
+      },
+      "fit": "Fit",
+      "fit_hint": "Fill crops to 9:16; Blur shows the whole frame on a blurred copy",
+      "fit_name": {
+        "fill": "Fill",
+        "blur": "Blur"
+      },
+      "fit_blur_note": "Blurred background: the whole frame is shown",
+      "easing": "Easing",
+      "easing_name": {
+        "linear": "Linear",
+        "ease_in_out": "Ease in-out"
+      },
+      "keyframes": "Keyframes ({{count}})",
+      "keyframes_hint": "x, y = crop center (0–1), zoom 1 = largest crop",
+      "add_keyframe": "Add a keyframe at the playhead",
+      "add_keyframe_short": "Keyframe",
+      "remove_keyframe": "Remove keyframe",
+      "keyframe_at": "Keyframe at {{time}}",
+      "kf_time": "Time",
+      "kf_zoom": "Zoom",
+      "motion": "Motion",
+      "audio_original": "Original audio",
+      "volume": "Volume",
+      "db": "{{value}} dB",
+      "target_lufs": "Target loudness (LUFS)",
+      "target_lufs_hint": "Platforms play shorts at about −14 LUFS",
+      "isolate": "Voice Isolator",
+      "isolate_hint": "Clean up the original audio with ElevenLabs (uses credits, asks first)",
+      "needs_elevenlabs": "Needs an ElevenLabs key",
+      "ducking": "Ducking",
+      "duck_db": "Lower the original audio under the voiceover",
+      "duck_hint": "How much quieter the original audio gets while the voiceover plays",
+      "duck_note": "Applies once a voiceover is added (Voice tab).",
+      "tab": {
+        "framing": "Framing",
+        "captions": "Captions",
+        "hook": "Hook",
+        "voice": "Voice",
+        "audio": "Audio",
+        "export": "Export"
+      },
+      "later": {
+        "captions": "Caption styles and editing arrive in the next update.",
+        "hook": "Hook text editing arrives with captions.",
+        "voice": "ElevenLabs voiceover arrives in a later update.",
+        "export": "Rendering arrives in a later update."
+      },
+      "track": {
+        "video": "Video",
+        "captions": "Captions",
+        "hook": "Hook",
+        "voiceover": "Voiceover",
+        "audio": "Audio",
+        "crop": "Crop"
+      }
     },
     "export": {
       "title": "Export",
@@ -301,7 +420,11 @@
     "MOMENTS_FEWER_THAN_WANTED": "Only {{count}} moments were found. You can add more by hand.",
     "MOMENT_NOT_FOUND": "This moment no longer exists.",
     "ANALYSIS_NOT_READY": "The analysis for this video isn't ready yet.",
-    "MOMENTS_DUPLICATES_DROPPED": "{{count}} of {{total}} proposals were dropped: duplicates of a better one, too short, or already covered by your moments."
+    "MOMENTS_DUPLICATES_DROPPED": "{{count}} of {{total}} proposals were dropped: duplicates of a better one, too short, or already covered by your moments.",
+    "CLIP_NOT_FOUND": "This clip no longer exists.",
+    "CLIP_BUSY": "This clip is still being processed. Try again in a moment.",
+    "PREPARE_FAILED": "Could not cut the clip from the source: {{detail}}",
+    "REFRAME_FAILED": "Automatic framing failed: {{detail}}"
   },
   "steps": {
     "preflight": "Preflight",
@@ -390,5 +513,11 @@
     "youtube_shorts": "YouTube Shorts",
     "tiktok": "TikTok",
     "reels": "Instagram Reels"
+  },
+  "clip_status": {
+    "draft": "Draft",
+    "review": "In review",
+    "approved": "Approved",
+    "rendered": "Rendered"
   }
 }

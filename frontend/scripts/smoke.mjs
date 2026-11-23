@@ -226,6 +226,124 @@ async function momentsFlow(source) {
   }
 }
 
+/**
+ * Clip Editor (Phase 3): open a clip from an approved moment, wait for the automatic framing,
+ * edit a keyframe number and check the 9:16 preview redraws and the EDL is saved, drag the crop
+ * box (switches to manual), split a segment + undo, safe zones, VI layout, reload persistence.
+ */
+async function editorFlow(source) {
+  const api = (path, init) => fetch(`${BASE}/api${path}`, init).then((r) => r.json());
+  const json = (method, body) => ({ method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  const moments = await api(`/sources/${source.id}/moments`);
+  const moment = moments.find((m) => m.status === "approved") ?? moments[0];
+  const originalStatus = moment.status;
+  if (originalStatus !== "approved") await api(`/moments/${moment.id}`, json("PATCH", { status: "approved", snap: false }));
+
+  const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: "en-US" });
+  try {
+    await editorChecks(context, moment);
+  } finally {
+    await context.close();
+    if (originalStatus !== "approved") await api(`/moments/${moment.id}`, json("PATCH", { status: originalStatus, snap: false }));
+  }
+}
+
+async function editorChecks(context, moment) {
+  const api = (path, init) => fetch(`${BASE}/api${path}`, init).then((r) => r.json());
+  const page = await context.newPage();
+  await page.goto(`${BASE}/library`);
+  await page.getByTestId("lang-en").click();
+  await page.goto(`${BASE}/editor?moment=${moment.id}`);
+  await page.waitForSelector('[data-testid="clip-editor"]', { timeout: 20_000 });
+  check(page.url().includes("clip="), "?moment= opens the clip and the URL switches to ?clip=");
+  const clipId = await page.getByTestId("clip-editor").getAttribute("data-clip-id");
+  await page.waitForFunction(() => ["done", "error"].includes(document.querySelector('[data-testid="reframe-status"]')?.dataset.state), null, { timeout: 120_000 }).catch(() => {});
+  const state = await page.getByTestId("reframe-status").getAttribute("data-state");
+  check(state === "done", `automatic framing finished (state=${state})`);
+  await page.waitForFunction(() => document.querySelector('[data-testid="editor-video"]')?.readyState >= 2, null, { timeout: 20_000 });
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: shot("en-editor.png") });
+
+  const canvasHash = () =>
+    page.getByTestId("preview-canvas").evaluate((c) => {
+      const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
+      let h = 0;
+      for (let i = 0; i < d.length; i += 97) h = (h * 31 + d[i]) >>> 0;
+      return h;
+    });
+
+  // the first keyframe's x: type a new value -> preview redraws, EDL saved
+  await page.getByTestId("mode-manual").click();
+  await page.getByTestId("fit").selectOption("fill"); // screen recordings without a visible cursor fall back to blur
+  await page.waitForTimeout(300);
+  const before = await canvasHash();
+  const xField = page.getByTestId("kf-x").first();
+  const oldX = Number(await xField.inputValue());
+  const newX = oldX > 0.4 ? 0.2 : 0.8;
+  await xField.fill(String(newX));
+  await xField.press("Enter");
+  await page.keyboard.press("Tab");
+  const t0 = Date.now();
+  let after = before;
+  for (let i = 0; i < 20 && after === before; i++) {
+    await page.waitForTimeout(25);
+    after = await canvasHash();
+  }
+  const redrawMs = Date.now() - t0;
+  check(after !== before, `editing a keyframe redraws the 9:16 preview (${redrawMs} ms)`);
+  await page.waitForTimeout(1200);
+  const savedClip = await api(`/clips/${clipId}`);
+  const firstX = [...savedClip.edl.crop.keyframes].sort((a, b) => a.t - b.t)[0].x;
+  check(Math.abs(firstX - Number(await xField.inputValue())) < 0.002 && Math.abs(firstX - oldX) > 0.05, `keyframe edit autosaved (x ${oldX} -> ${firstX})`);
+
+  // drag the crop box in auto mode -> manual + keyframe at playhead
+  await page.getByTestId("mode-auto").click();
+  const box = await page.getByTestId("crop-box").boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 40, box.y + box.height / 2, { steps: 5 });
+  await page.mouse.up();
+  check((await page.getByTestId("mode-manual").getAttribute("aria-checked")) === "true", "dragging the crop box switches to manual");
+
+  // split + undo
+  const segs = () => page.getByTestId("timeline-segment").count();
+  await page.getByTestId("timeline-scroller").click({ position: { x: 200, y: 10 } });
+  await page.keyboard.press("s");
+  check((await segs()) === 2, "S splits the segment at the playhead");
+  await page.keyboard.press("Control+z");
+  check((await segs()) === 1, "Ctrl+Z undoes the split");
+
+  // safe zones toggle
+  const safe = await page.getByTestId("safe-zones").count();
+  await page.getByTestId("toggle-safe-zones").click();
+  check((await page.getByTestId("safe-zones").count()) !== safe, "safe-zone overlay toggles");
+  if (!safe) await page.getByTestId("toggle-safe-zones").click();
+
+  // Vietnamese layout + every tab
+  await page.getByTestId("lang-vi").click();
+  for (const tab of ["framing", "captions", "hook", "voice", "audio", "export"]) {
+    await page.getByTestId(`tab-${tab}`).click();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    check(overflow <= 0, `vi/editor/${tab}: no horizontal overflow (${overflow}px)`);
+  }
+  await page.getByTestId("tab-framing").click();
+  await page.screenshot({ path: shot("vi-editor.png") });
+  await page.getByTestId("lang-en").click();
+  await page.waitForTimeout(1200);
+  check((await page.getByTestId("save-status").getAttribute("data-status").catch(() => "saved")) !== "error", "editor autosave reports no error");
+
+  // reload -> persisted manual framing
+  const saved = (await api(`/clips/${clipId}`)).edl;
+  await page.reload();
+  await page.waitForSelector('[data-testid="clip-editor"]', { timeout: 20_000 });
+  check((await page.getByTestId("mode-manual").getAttribute("aria-checked")) === "true" && saved.crop.mode === "manual", "after reload: manual framing persisted");
+
+  // back to Moments
+  await page.getByTestId("back-to-moments").click();
+  await page.waitForURL("**/moments");
+  check(true, "← Moments returns to Moments");
+}
+
 const formatTc = (t) => {
   const m = Math.floor(t / 60);
   const s = t - m * 60;
@@ -254,7 +372,9 @@ try {
       if (name === "library" || name === "settings") {
         await page.waitForSelector('[data-testid="system-backend"]', { timeout: 10_000 }).catch(() => {});
       }
-      texts[lang][name] = await page.evaluate(() => document.body.innerText);
+      // text marked data-content (titles, transcripts) follows the video's language, not the UI's
+      texts[lang][name] = await page.evaluate(() =>
+        [...document.querySelectorAll("[data-content]")].reduce((text, el) => text.split(el.innerText).join(" "), document.body.innerText));
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       check(overflow <= 0, `${lang}/${name}: no horizontal overflow (${overflow}px)`);
       await page.waitForTimeout(250); // let nav color transitions finish
@@ -320,6 +440,11 @@ try {
   const withMoments = sources.find((s) => s.status === "ready" && s.moments.total >= 8);
   if (withMoments) await momentsFlow(withMoments);
   else console.log("SKIP  moments flow (no ready source with ≥ 8 moments: run /find-moments on the sample first)");
+
+  // --- 6. Clip Editor (Phase 3) ---------------------------------------------
+  const editable = sources.find((s) => s.status === "ready" && s.moments.total > 0 && s.proxy_url);
+  if (editable) await editorFlow(editable);
+  else console.log("SKIP  editor flow (no ready source with moments)");
 } finally {
   await browser.close();
 }
