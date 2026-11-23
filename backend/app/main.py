@@ -15,7 +15,7 @@ from fastapi import FastAPI, Query, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from pydantic import BaseModel, Field
 from sqlmodel import col, select
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -619,6 +619,13 @@ def get_clip(clip_id: str) -> dict[str, Any]:
 class ClipPatch(BaseModel):
     edl: dict[str, Any] | None = None  # partial EDL: each section sent replaces that section
     status: str | None = None
+
+
+@app.get("/clips/{clip_id}/captions.srt")
+def get_clip_srt(clip_id: str) -> Response:
+    """The clip's captions as SubRip (generated from the saved EDL)."""
+    return Response(clips_service.clip_srt(clip_id), media_type="application/x-subrip; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="{clip_id}.srt"'})
 
 
 @app.patch("/clips/{clip_id}")

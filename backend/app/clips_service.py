@@ -18,7 +18,7 @@ from sqlmodel import col, select
 
 from app import db, edl as edl_mod, errors, jobs, settings_store
 from app.models import Clip, Moment, Source, utcnow
-from pipeline import reframe
+from pipeline import captions as captions_mod, reframe
 
 CLIP_JOB = "clip"
 CLIP_LANE = "edit"
@@ -92,7 +92,11 @@ def clip_out(clip: Clip, *, full: bool = True) -> dict[str, Any]:
 
 
 def get_clip(clip_id: str) -> dict[str, Any]:
-    return clip_out(_load(clip_id))
+    return clip_out(seed_captions(_load(clip_id)))
+
+
+def clip_srt(clip_id: str) -> str:
+    return captions_mod.edl_srt(seed_captions(_load(clip_id)).edl or {})
 
 
 def list_clips(source_id: str) -> list[dict[str, Any]]:
@@ -113,6 +117,63 @@ def clip_for_moment(moment_id: int) -> Clip | None:
         return s.exec(select(Clip).where(Clip.moment_id == moment_id)).first()
 
 
+def transcript_words(source_id: str) -> list[dict[str, Any]]:
+    """Words of the source's transcript ([] when there is none, e.g. no audio)."""
+    import json
+
+    from app import tasks
+
+    path = tasks.transcript_path(source_id)
+    if not path.exists():
+        return []
+    try:
+        return list(json.loads(path.read_text(encoding="utf-8")).get("words") or [])
+    except (OSError, ValueError):
+        return []
+
+
+def _clip_range(edl: dict[str, Any]) -> tuple[float, float]:
+    segments = edl.get("segments") or [{"start": 0.0, "end": 0.0}]
+    return min(s["start"] for s in segments), max(s["end"] for s in segments)
+
+
+def write_srt(clip: Clip) -> Path | None:
+    """captions.srt next to the clip's media (rewritten on every caption/segment change)."""
+    folder = clip_dir(clip)
+    try:
+        folder.mkdir(parents=True, exist_ok=True)
+        path = folder / "captions.srt"
+        tmp = folder / "captions.srt.part"
+        tmp.write_text(captions_mod.edl_srt(clip.edl or {}), encoding="utf-8")
+        tmp.replace(path)
+        return path
+    except OSError:
+        return None
+
+
+def seed_captions(clip: Clip) -> Clip:
+    """Fill caption words from the transcript once (clips made before captions existed, or
+    before the transcript was ready)."""
+    work = {**_empty_work(), **(clip.work or {})}
+    if work.get("captions_seeded"):
+        return clip
+    words = transcript_words(clip.source_id)
+    if not words:
+        return clip
+    data = dict(clip.edl or {})
+    caps = dict(data.get("captions") or {})
+    if not caps.get("words"):
+        start, end = _clip_range(data)
+        caps["words"] = captions_mod.words_in_range(words, start, end)
+        data["captions"] = caps
+        clip.edl = edl_mod.validate(data, source_duration=_source(clip.source_id).duration)
+    work["captions_seeded"] = True
+    clip.work = work
+    clip = _save(clip)
+    write_srt(clip)
+    return clip
+
+
 def _source(source_id: str) -> Source:
     from app import tasks
 
@@ -129,13 +190,16 @@ def ensure_clip(moment: dict[str, Any], *, enqueue: bool = True) -> dict[str, An
     src = _source(moment["source_id"])
     clip_id = new_clip_id()
     mode = reframe.default_mode(tasks.effective_content_type(src))
+    words = captions_mod.words_in_range(transcript_words(src.id), moment["start"], moment["end"])
     data = edl_mod.build_default(clip_id=clip_id, source_id=src.id, moment=moment, mode=mode,
-                                 default_style=settings_store.get("default_caption_style"))
-    clip = Clip(id=clip_id, source_id=src.id, moment_id=int(moment["id"]), edl=data, work=_empty_work())
+                                 default_style=settings_store.get("default_caption_style"), words=words)
+    clip = Clip(id=clip_id, source_id=src.id, moment_id=int(moment["id"]), edl=data,
+                work=_empty_work() | {"captions_seeded": bool(words)})
     with db.session() as s:
         s.add(clip)
         s.commit()
         s.refresh(clip)
+    write_srt(clip)
     if enqueue:
         queue_work(clip.id)
     return clip_out(_load(clip.id))
@@ -174,7 +238,10 @@ def patch_clip(clip_id: str, *, edl_patch: dict[str, Any] | None = None, status:
             clip.work = work
     else:
         clip.edl = {**(clip.edl or {}), "status": clip.status}
-    return clip_out(_save(clip))
+    clip = _save(clip)
+    if edl_patch and ({"captions", "segments"} & set(edl_patch)):
+        write_srt(clip)
+    return clip_out(clip)
 
 
 def recompute(clip_id: str, mode: str | None = None) -> dict[str, Any]:
@@ -196,6 +263,10 @@ def sync_moment(moment: dict[str, Any]) -> None:
     if len(segments) == 1 and (abs(segments[0]["start"] - moment["start"]) > 1e-3 or
                                abs(segments[0]["end"] - moment["end"]) > 1e-3):
         data["segments"] = [{"start": moment["start"], "end": moment["end"]}]
+        caps = dict(data.get("captions") or {})
+        caps["words"] = captions_mod.merge_words(caps.get("words") or [], transcript_words(clip.source_id),
+                                                 moment["start"], moment["end"])
+        data["captions"] = caps
         changed_range = True
     if moment.get("caption_style"):
         data["captions"] = {**(data.get("captions") or {}), "style": moment["caption_style"]}
@@ -203,7 +274,8 @@ def sync_moment(moment: dict[str, Any]) -> None:
         data["platform"] = moment["platform"]
     src = _source(clip.source_id)
     clip.edl = edl_mod.validate(data, source_duration=src.duration)
-    _save(clip)
+    clip = _save(clip)
+    write_srt(clip)
     if changed_range:
         work = {**_empty_work(), **(clip.work or {})}
         busy = any(work[s]["state"] in ("queued", "running") for s in WORK_STEPS)

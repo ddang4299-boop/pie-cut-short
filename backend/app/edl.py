@@ -77,13 +77,27 @@ class Crop(_Model):
         return out
 
 
+class CaptionWord(_Model):
+    """A caption word in source time (see pipeline/captions.py)."""
+    start: float = Field(ge=0)
+    end: float = Field(ge=0)
+    text: str = Field(default="", max_length=200)
+    emphasis: bool = False
+
+    @model_validator(mode="after")
+    def _order(self) -> "CaptionWord":
+        if self.end < self.start:
+            self.end = self.start
+        return self
+
+
 class Captions(_Model):
     enabled: bool = True
     style: Literal["bold", "bounce", "clean"] = "bold"
     position_y: float = Field(default=0.72, ge=0.05, le=0.95)
     words_per_page: int = Field(default=3, ge=1, le=4)
     font_size: int = Field(default=72, ge=24, le=160)
-    words: list[dict[str, Any]] = Field(default_factory=list)
+    words: list[CaptionWord] = Field(default_factory=list, max_length=20000)
 
 
 class HookText(_Model):
@@ -171,7 +185,7 @@ def validate(data: dict[str, Any], *, source_duration: float | None = None) -> d
 
 
 def build_default(*, clip_id: str, source_id: str, moment: dict[str, Any], mode: str,
-                  default_style: str = "bold") -> dict[str, Any]:
+                  default_style: str = "bold", words: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     style = moment.get("caption_style") if moment.get("caption_style") in CAPTION_STYLES else default_style
     platform = moment.get("platform") if moment.get("platform") in PLATFORMS else "youtube_shorts"
     hook = (moment.get("hook") or "").strip()
@@ -181,7 +195,7 @@ def build_default(*, clip_id: str, source_id: str, moment: dict[str, Any], mode:
         "moment_id": moment.get("id"),
         "segments": [{"start": moment["start"], "end": moment["end"]}],
         "crop": {"mode": mode if mode in CROP_MODES else "auto"},
-        "captions": {"style": style},
+        "captions": {"style": style, "words": words or []},
         "hook_text": {"enabled": bool(hook), "text": hook[:200]},
         "platform": platform,
     }
