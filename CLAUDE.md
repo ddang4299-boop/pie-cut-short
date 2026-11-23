@@ -261,5 +261,5 @@ Reference numbers for a mid-range GPU (e.g. RTX 3060); CPU being 3–5× slower 
 - [x] Phase 4 — Captions + Remotion
 - [x] Phase 5 — ElevenLabs (partial: verified with the mock client only; real-key check in BLOCKED.md)
 - [x] Phase 6 — Render + Export + CapCut (partial: phone playback, CapCut import and NVENC need a human, see BLOCKED.md)
-- [ ] Phase 7 — Polish
+- [x] Phase 7 — Polish (partial: render speed target missed on this laptop without NVENC, see BLOCKED.md)
 - [ ] Phase 8 — (Optional) WhisperX, Auto-Editor, Pedalboard, VideoLingo, Twitch

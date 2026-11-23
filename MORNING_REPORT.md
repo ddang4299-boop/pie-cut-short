@@ -274,3 +274,51 @@ Bỏ qua: không có thư mục `vendor/claude-shorts`. Nếu muốn dùng lại
 **Lưu ý**
 - Remotion chậm hơn mục tiêu trên máy này (clip 18 s mất 74 s, nên clip 45 s mất khoảng 3 phút). Nếu cần nhanh, chọn **FFmpeg (nhanh hơn)** trong Cài đặt hoặc ngay trong thẻ Xuất.
 - **CapCut mức 2** (tạo sẵn project nháp) đã bỏ qua: CapCut chưa cài, và các bản CapCut mới mã hoá file nháp nên thư viện tạo nháp không còn dùng được.
+
+## Phase 7 — Hoàn thiện ⚠️ PARTIAL
+
+**Đã làm được**
+- **Duyệt hàng loạt**: tick nhiều khoảnh khắc rồi Duyệt / Từ chối một lần, có thể kèm một **preset kênh**. Chỉ áp dụng cho các thẻ đang hiện theo bộ lọc. Ctrl+Z hoàn tác trạng thái.
+- **Render hàng loạt**: trang Xuất có nút **Render các clip đã chọn**.
+- **Preset kênh** (Cài đặt → Kênh): nền tảng, kiểu phụ đề (vị trí, số chữ mỗi trang, cỡ chữ), hook, thanh tiến trình, giọng đọc. Áp dụng khi duyệt hàng loạt hoặc trong thẻ Xuất của trình chỉnh sửa. Preset chỉ đổi "giao diện", không đổi đoạn cắt, khung hình hay nội dung chữ.
+- **Trang Cài đặt đầy đủ**:
+  - AI: nhà cung cấp, trọng số chấm điểm, độ dài clip, số khoảnh khắc.
+  - Chép lời: model Whisper và thiết bị, đổi được ngay không cần khởi động lại.
+  - Render: bộ render, nền tảng và kiểu phụ đề mặc định, thư mục xuất.
+  - Preset từng nền tảng, kênh, ElevenLabs (trạng thái + giọng mặc định).
+  - **Bộ nhớ đệm**: xem dung lượng và nút Xoá. Không bao giờ xoá file giọng ElevenLabs (đã trả tiền), model Whisper hay video đã render.
+- **Lỗi dễ hiểu**: mỗi tác vụ có log riêng, nút **Thử lại** trên trang Xuất và trong thẻ Render. Nếu một trang bị lỗi thì chỉ trang đó hiện thẻ lỗi (Thử lại / Xem log); thanh bên và header vẫn dùng được.
+- **Sửa giao diện**:
+  - Tooltip không còn làm lệch trang Editor.
+  - Tab tiếng Việt không bị cắt chữ.
+  - Sửa lỗi preset kênh không lưu khi sửa nhanh.
+- **Rà soát EN/VI**: kiểm thử trình duyệt (smoke) chạy mọi trang bằng cả hai ngôn ngữ. Không còn chữ của ngôn ngữ kia, không tràn ngang, không cắt nhãn tab. Có 770 khoá, hai file khớp nhau.
+- **Chép lời nhanh gấp ~3 lần trên GPU** (chế độ batched của faster-whisper). Độ chính xác giữ nguyên: tỉ lệ sai 0,099 so với 0,102 trước đây. Nếu GPU lỗi thì tự chuyển sang chế độ thường, rồi sang CPU.
+- **`scripts/e2e_sample.py`**: chạy toàn bộ pipeline trên `samples/` trong một thư mục tạm (không đụng vào thư viện của bạn, không tốn tiền), rồi in bảng chỉ số nghiệm thu và lưu file JSON.
+- **README** viết lại: cài đặt, chạy, quy trình, Cài đặt, chi phí và quyền riêng tư, kiểm thử, báo cáo e2e.
+
+**Kết quả e2e** (RTX 4060 Laptop, `data/e2e/report_20261123_191914.json`): 14 đạt · 1 cảnh báo · 0 lỗi
+- Chép lời: video 30 phút ước tính **1 phút 35 giây** (mục tiêu ≤ 3 phút) ✅
+- Điểm cắt nằm giữa từ: 0/4 ✅
+- Âm lượng: −14,6 LUFS, true peak −1,6 dBTP ✅
+- Xem trước so với bản render: SSIM 0,998 ✅
+- Lệch phụ đề: 0 ms ✅
+- Dấu tiếng Việt: đủ cả 3 font ✅
+- Khớp khoá en/vi ✅
+- Không còn file tạm ✅
+- Render: ⚠️ clip 32 s mất 2 phút 22 giây (clip 45 s khoảng 3 phút 18 giây). Nằm trong mức cho phép khi chạy CPU, nhưng chậm hơn mục tiêu 90 s cho GPU.
+
+**Kiểm thử**
+- pytest backend **248/248** pass (thêm 4 bài cho thứ tự dự phòng GPU → CPU khi chép lời).
+- Vitest 53/53, `npm run build` pass, kiểm tra khoá en/vi pass, smoke EN + VI pass.
+
+**Cần bạn làm** (ghi trong `BLOCKED.md`)
+- **Tốc độ render**: trên máy này Remotion mất khoảng 2,7 lần độ dài clip, và 4,4 lần với video quay màn hình có nền mờ.
+  - Tôi đã đo mọi tuỳ chọn của Remotion (số luồng, GL, WebCodecs, ảnh kiểm tra chạy song song) mà không cái nào nhanh hơn rõ rệt, chi tiết trong `DECISIONS.md`.
+  - Phần chậm là Chrome vẽ từng khung hình. NVENC (cần cập nhật driver ≥ 610) chỉ giúp phần mã hoá.
+  - Sau khi cập nhật driver, hãy chạy lại `.venv\Scripts\python scripts\e2e_sample.py`.
+- Các mục cũ vẫn còn: thử với video có mặt người thật, khoá ElevenLabs thật, phát trên điện thoại, nhập vào CapCut.
+
+**Lưu ý**
+- Nếu muốn render nhanh hơn: chọn **FFmpeg** làm bộ render mặc định trong Cài đặt. Với cùng một clip 20 s có nền mờ, FFmpeg mất 42 s, còn Remotion mất 105 s. Bạn cũng có thể đổi khung hình của video quay màn hình sang "fill" trong Editor → Khung hình.
+- Sửa ghi chú cũ ở Phase 6: lần đo "clip 18 s mất 74 s" có tính cả lần đóng gói Remotion đầu tiên, việc này chỉ chạy một lần sau mỗi lần sửa code.
