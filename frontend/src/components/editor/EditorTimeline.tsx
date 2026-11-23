@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import type { Edl, Waveform } from "../../lib/api";
 import { clipDuration, segmentOffsets, sortKeyframes, toSourceTime } from "../../lib/edl";
+import { pagesOf } from "../../lib/captions";
 import { formatTimecode } from "../../lib/format";
 
 const LABEL_W = 104;
@@ -45,6 +46,7 @@ export function EditorTimeline({
   const [viewW, setViewW] = useState(800);
   const [pps, setPps] = useState<number | null>(null); // null = fit to width
   const duration = Math.max(0.1, clipDuration(edl.segments));
+  const pages = useMemo(() => pagesOf(edl.captions.words, edl.segments, edl.captions.words_per_page), [edl.captions.words, edl.segments, edl.captions.words_per_page]);
   const fitPps = Math.max(MIN_PPS, (viewW - 24) / duration);
   const scale = pps ?? fitPps;
   const width = Math.max(viewW - 8, duration * scale + 16);
@@ -168,9 +170,22 @@ export function EditorTimeline({
               </button>
             ))}
           </div>
-          {/* captions (Phase 4) */}
-          <div className="relative border-t border-line/50" style={{ height: TRACK_H }}>
-            {edl.captions.enabled && <div className="absolute top-2 bottom-2 rounded bg-white/5" style={{ left: x(0), width: duration * scale }} />}
+          {/* captions: one block per page */}
+          <div className="relative border-t border-line/50" style={{ height: TRACK_H }} data-testid="track-captions">
+            {edl.captions.enabled &&
+              pages.map((p) => (
+                <div
+                  key={`${p.words[0].index}-${p.words.length}`}
+                  className={`absolute top-1.5 bottom-1.5 truncate rounded border-l-2 px-1 text-[10px] leading-[16px] ${
+                    time >= p.start && time < p.show_end ? "border-accent bg-accent/30 text-fg" : "border-accent/60 bg-accent/10 text-muted"
+                  }`}
+                  style={{ left: x(p.start), width: Math.max(3, (p.show_end - p.start) * scale - 1) }}
+                  title={`${formatTimecode(p.start)} – ${formatTimecode(p.show_end)}`}
+                  data-content
+                >
+                  {p.words.map((w) => w.text).join(" ")}
+                </div>
+              ))}
           </div>
           {/* hook */}
           <div className="relative border-t border-line/50" style={{ height: TRACK_H }}>

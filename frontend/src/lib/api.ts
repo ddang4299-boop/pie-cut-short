@@ -1,4 +1,5 @@
 import type { CropFit, CropMode, Easing, Keyframe, Region, Segment } from "./edl";
+import type { CaptionWord } from "./captions";
 
 /** Thin fetch wrapper. The backend always answers errors as {code, severity, params}. */
 
@@ -366,7 +367,7 @@ export interface Edl {
   moment_id: number | null;
   segments: Segment[];
   crop: { mode: CropMode; easing: Easing; fit: CropFit; keyframes: Keyframe[]; split: { top: Region; bottom: Region; ratio: number } | null };
-  captions: { enabled: boolean; style: CaptionStyle; position_y: number; words_per_page: number; font_size: number; words: unknown[] };
+  captions: { enabled: boolean; style: CaptionStyle; position_y: number; words_per_page: number; font_size: number; words: CaptionWord[] };
   hook_text: { enabled: boolean; text: string; start: number; end: number; position_y: number };
   progress_bar: { enabled: boolean; color: string };
   voiceover: { enabled: boolean; script: string; voice_id: string; audio_path: string | null; start: number; duck_db: number };
@@ -401,4 +402,7 @@ export const getClip = (id: string) => apiGet<Clip>(`/clips/${id}`);
 export const openMomentClip = (momentId: number) => apiSend<Clip>("POST", `/moments/${momentId}/clip`);
 export const patchClip = (id: string, body: { edl?: Partial<Pick<Edl, EdlSection>>; status?: ClipStatus }) =>
   apiSend<Clip>("PATCH", `/clips/${id}`, body);
+/** The clip's captions as SubRip, generated from the saved EDL. */
+export const clipSrtUrl = (id: string) => apiUrl(`/clips/${id}/captions.srt`);
+export const getClipSrt = (id: string) => fetch(clipSrtUrl(id)).then((r) => (r.ok ? r.text() : Promise.reject(new Error(String(r.status)))));
 export const reframeClip = (id: string, mode?: CropMode) => apiSend<Clip>("POST", `/clips/${id}/reframe`, mode ? { mode } : {});

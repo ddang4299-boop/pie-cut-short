@@ -75,7 +75,7 @@ export function NumberField({
   );
 }
 
-function Section({ title, children, actions }: { title: string; children: ReactNode; actions?: ReactNode }) {
+export function Section({ title, children, actions }: { title: string; children: ReactNode; actions?: ReactNode }) {
   return (
     <section className="border-b border-line px-4 py-3">
       <div className="mb-2 flex items-center justify-between gap-2">
@@ -87,7 +87,7 @@ function Section({ title, children, actions }: { title: string; children: ReactN
   );
 }
 
-function Row({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
+export function Row({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   return (
     <label className="mb-2 grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] items-center gap-3 text-sm">
       <span className="min-w-0 text-muted" title={hint}>
@@ -98,7 +98,7 @@ function Row({ label, children, hint }: { label: string; children: ReactNode; hi
   );
 }
 
-const selectCls = "w-full min-w-0 rounded-md border border-line bg-app px-2 py-1 text-sm outline-none focus:border-accent";
+export const selectCls = "w-full min-w-0 rounded-md border border-line bg-app px-2 py-1 text-sm outline-none focus:border-accent";
 
 export function FramingTab({
   clip,

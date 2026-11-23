@@ -1,3 +1,5 @@
+import { fileURLToPath } from "node:url";
+
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
@@ -7,9 +9,16 @@ const BACKEND_URL = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  resolve: {
+    // The Remotion composition (../remotion/src) is shared with the editor preview. Its imports
+    // must resolve to this app's single copy of React / Remotion, not ../remotion/node_modules.
+    alias: { "@composition": fileURLToPath(new URL("../remotion/src", import.meta.url)) },
+    dedupe: ["react", "react-dom", "remotion", "zod", "@fontsource/be-vietnam-pro"],
+  },
   server: {
     port: 5173,
     strictPort: true,
+    fs: { allow: [".", "../remotion/src"] },
     proxy: {
       "/api": {
         target: BACKEND_URL,

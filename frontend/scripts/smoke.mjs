@@ -244,9 +244,12 @@ async function editorFlow(source) {
     await editorChecks(context, moment);
   } finally {
     await context.close();
+    if (restore) await api(`/clips/${restore.id}`, json("PATCH", { edl: restore.edl })); // undo the caption/hook test edits
     if (originalStatus !== "approved") await api(`/moments/${moment.id}`, json("PATCH", { status: originalStatus, snap: false }));
   }
 }
+
+let restore = null;
 
 async function editorChecks(context, moment) {
   const api = (path, init) => fetch(`${BASE}/api${path}`, init).then((r) => r.json());
@@ -319,12 +322,15 @@ async function editorChecks(context, moment) {
   check((await page.getByTestId("safe-zones").count()) !== safe, "safe-zone overlay toggles");
   if (!safe) await page.getByTestId("toggle-safe-zones").click();
 
+  await captionChecks(page, clipId);
+
   // Vietnamese layout + every tab
   await page.getByTestId("lang-vi").click();
   for (const tab of ["framing", "captions", "hook", "voice", "audio", "export"]) {
     await page.getByTestId(`tab-${tab}`).click();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     check(overflow <= 0, `vi/editor/${tab}: no horizontal overflow (${overflow}px)`);
+    if (tab === "captions" || tab === "hook" || tab === "export") await page.screenshot({ path: shot(`vi-editor-${tab}.png`) });
   }
   await page.getByTestId("tab-framing").click();
   await page.screenshot({ path: shot("vi-editor.png") });
@@ -342,6 +348,83 @@ async function editorChecks(context, moment) {
   await page.getByTestId("back-to-moments").click();
   await page.waitForURL("**/moments");
   check(true, "← Moments returns to Moments");
+}
+
+/**
+ * Captions + hook (Phase 4): editing a block's text updates the Remotion overlay on the 9:16
+ * preview and the clip's SRT; Bold / Bounce / Clean all render Vietnamese and English text.
+ */
+async function captionChecks(page, clipId) {
+  const api = (path) => fetch(`${BASE}/api${path}`).then((r) => r.json());
+  const original = (await api(`/clips/${clipId}`)).edl;
+  restore = { id: clipId, edl: { captions: original.captions, hook_text: original.hook_text } };
+
+  await page.getByTestId("tab-captions").click();
+  await page.getByTestId("wpp-3").click();
+  const blocks = page.getByTestId("caption-block");
+  check((await blocks.count()) >= 2, `captions tab lists caption blocks (${await blocks.count()})`);
+  const VI = "Đặc biệt quá";
+  const EN = "Really fast words";
+  for (const [i, text] of [[0, VI], [1, EN]]) {
+    const input = blocks.nth(i).getByTestId("caption-text");
+    await input.fill(text);
+    await input.press("Enter");
+  }
+  check((await blocks.nth(0).getByTestId("caption-text").inputValue()) === VI, "caption block text is editable");
+
+  const overlayText = async (i) => {
+    await blocks.nth(i).locator("button").first().click(); // seek to the block
+    await page.waitForTimeout(350);
+    return page.getByTestId("preview-overlay").getByTestId("caption-page").first()
+      .evaluate((el) => ({ text: [...el.querySelectorAll("[data-word]")].map((w) => w.textContent.trim()).join(" "), style: el.dataset.style }))
+      .catch(() => ({ text: "", style: "" }));
+  };
+  for (const style of ["bold", "bounce", "clean"]) {
+    await page.getByTestId(`style-${style}`).click();
+    for (const [i, text] of [[0, VI], [1, EN]]) {
+      const want = style === "bold" ? text.toLocaleUpperCase("vi") : text;
+      const got = await overlayText(i);
+      check(got.style === style && got.text === want, `${style}: preview shows "${want}" (got "${got.text}")`);
+    }
+  }
+  await page.screenshot({ path: shot("en-editor-captions.png") });
+  check(await page.evaluate(() => document.fonts.check('900 72px "Be Vietnam Pro"', "Đặc biệt")), "Be Vietnam Pro is loaded for captions");
+
+  // emphasis, find & replace
+  const chip = blocks.nth(0).getByTestId("emphasis-chip").first();
+  await chip.click();
+  check((await chip.getAttribute("aria-pressed")) === "true", "clicking a word marks it emphasized");
+  await page.getByTestId("find-input").fill("quá");
+  check((await page.getByTestId("find-count").innerText()).includes("1"), "find counts the matches");
+  await page.getByTestId("replace-input").fill("lắm");
+  await page.getByTestId("replace-all").click();
+  check((await blocks.nth(0).getByTestId("caption-text").inputValue()) === "Đặc biệt lắm", "replace all edits the caption words");
+
+  // drag guide (keyboard) moves the caption position
+  const y0 = Number(await page.getByTestId("caption-y").inputValue());
+  await page.getByTestId("guide-captions").focus();
+  await page.keyboard.press("ArrowUp");
+  await page.keyboard.press("ArrowUp");
+  check(Number(await page.getByTestId("caption-y").inputValue()) === y0 - 2, "the caption guide on the preview moves the captions");
+
+  // autosave -> SRT
+  await page.waitForTimeout(1500);
+  const srt = await fetch(`${BASE}/api/clips/${clipId}/captions.srt`).then((r) => r.text());
+  check(srt.includes("Đặc biệt lắm") && srt.includes(EN), "the clip's SRT follows the caption edits");
+  const saved = (await api(`/clips/${clipId}`)).edl;
+  check(saved.captions.style === "clean" && saved.captions.words.some((w) => w.emphasis), "caption style and emphasis autosaved");
+
+  // hook
+  await page.getByTestId("tab-hook").click();
+  await page.getByTestId("hook-enabled").check();
+  await page.getByTestId("hook-input").fill("Đừng bỏ lỡ điều này");
+  await page.getByTestId("editor-play").focus();
+  await page.keyboard.press("Home");
+  await page.waitForTimeout(350);
+  const hook = await page.getByTestId("preview-overlay").getByTestId("hook-text").textContent().catch(() => "");
+  check(hook.includes("Đừng bỏ lỡ điều này"), `hook text shows on the preview at 0s (got "${hook}")`);
+  check((await page.getByTestId("guide-hook").count()) === 1, "hook tab shows the hook position guide");
+  await page.screenshot({ path: shot("en-editor-hook.png") });
 }
 
 const formatTc = (t) => {

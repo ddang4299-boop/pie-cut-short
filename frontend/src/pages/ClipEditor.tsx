@@ -19,7 +19,8 @@ import { useNavigate, useSearchParams } from "react-router";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EditorTimeline } from "../components/editor/EditorTimeline";
 import { AudioTab, FramingTab, INSPECTOR_TABS, PlaceholderTab, type InspectorTab } from "../components/editor/Inspector";
-import { PreviewCanvas } from "../components/editor/PreviewCanvas";
+import { PreviewCanvas, type Guide } from "../components/editor/PreviewCanvas";
+import { CaptionsTab, ExportTab, HookTab } from "../components/editor/TextTabs";
 import { SourceView, type Phase, type SplitPanel } from "../components/editor/SourceView";
 import { EmptyState, ErrorState, Skeleton } from "../components/states";
 import { useToast } from "../components/Toasts";
@@ -587,6 +588,19 @@ function EditorWorkspace({ clipId }: { clipId: string }) {
     [apply, beginGesture, endGesture, srcW, srcH],
   );
 
+  /** Drag the caption / hook guide on the 9:16 preview (one undo step per drag). */
+  const onGuide = useCallback(
+    (key: Guide["key"], y: number, phase: "start" | "move" | "end") => {
+      const cur = edlRef.current;
+      if (!cur) return;
+      beginGesture();
+      if (key === "captions") apply({ ...cur, captions: { ...cur.captions, position_y: y } }, "live");
+      else apply({ ...cur, hook_text: { ...cur.hook_text, position_y: y } }, "live");
+      if (phase === "end") endGesture();
+    },
+    [apply, beginGesture, endGesture],
+  );
+
   const recompute = useCallback(async () => {
     setConfirmRecompute(false);
     const cur = edlRef.current;
@@ -681,6 +695,12 @@ function EditorWorkspace({ clipId }: { clipId: string }) {
     navigate("/moments");
   }, [flush, clip, setCurrentSourceId, navigate]);
 
+  const guides = useMemo<Guide[]>(() => {
+    if (!edl) return [];
+    if (tab === "captions" && edl.captions.enabled) return [{ key: "captions", y: edl.captions.position_y, label: t("pages.editor.guide_captions") }];
+    if (tab === "hook" && edl.hook_text.enabled) return [{ key: "hook", y: edl.hook_text.position_y, label: t("pages.editor.guide_hook") }];
+    return [];
+  }, [edl, tab, t]);
   const proxySrc = useMemo(() => (source?.proxy_url ? apiUrl(source.proxy_url) : null), [source?.proxy_url]);
 
   // ------------------------------------------------------------------ render
@@ -752,7 +772,16 @@ function EditorWorkspace({ clipId }: { clipId: string }) {
       <div className="grid min-h-0 flex-1 grid-cols-[clamp(240px,22vw,360px)_minmax(0,1fr)_380px]">
         <div className="flex min-h-0 flex-col items-center justify-center gap-2 border-r border-line p-3">
           <div className="flex min-h-0 w-full flex-1 items-center justify-center">
-            <PreviewCanvas videoRef={video} edl={edl} showSafeZones={safeZones} />
+            <PreviewCanvas
+              videoRef={video}
+              edl={edl}
+              showSafeZones={safeZones}
+              language={source?.language || "en"}
+              srcW={srcW}
+              srcH={srcH}
+              guides={guides}
+              onGuide={onGuide}
+            />
           </div>
           <span className="truncate text-[11px] text-muted">
             {t(`platform.${edl.platform}`)} · {edl.output.w}×{edl.output.h}
@@ -862,6 +891,19 @@ function EditorWorkspace({ clipId }: { clipId: string }) {
               />
             ) : tab === "audio" ? (
               <AudioTab edl={edl} onAudio={(a) => setSection("audio", a, "record", "audio")} onVoiceover={(v) => setSection("voiceover", v, "record", "duck")} />
+            ) : tab === "captions" ? (
+              <CaptionsTab
+                edl={edl}
+                clipTime={time}
+                duration={duration}
+                language={source?.language || "en"}
+                onCaptions={(c, mode, key) => setSection("captions", c, mode, key)}
+                onSeek={seek}
+              />
+            ) : tab === "hook" ? (
+              <HookTab edl={edl} duration={duration} onHook={(h, mode, key) => setSection("hook_text", h, mode, key)} />
+            ) : tab === "export" ? (
+              <ExportTab edl={edl} onProgress={(p) => setSection("progress_bar", p)} onPlatform={(p) => setSection("platform", p)} />
             ) : (
               <PlaceholderTab tab={tab} />
             )}
