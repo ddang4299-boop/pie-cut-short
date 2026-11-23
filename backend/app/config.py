@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     ffmpeg_bin: str = "ffmpeg"
     ffprobe_bin: str = "ffprobe"
     start_job_workers: bool = True  # tests switch this off and drive the queue by hand
+    serve_frontend: bool = False  # desktop mode: also serve frontend/dist and accept the /api prefix
+    frontend_dist: Path = Path("frontend/dist")
 
     @staticmethod
     def _abs(path: Path) -> Path:
@@ -39,6 +41,10 @@ class Settings(BaseSettings):
     def data_path(self) -> Path:
         """Absolute data directory (relative paths are resolved from the repo root)."""
         return self._abs(self.data_dir)
+
+    @property
+    def frontend_dist_path(self) -> Path:
+        return self._abs(self.frontend_dist)
 
     @property
     def models_path(self) -> Path:

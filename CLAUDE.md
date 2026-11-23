@@ -248,6 +248,7 @@ Reference numbers for a mid-range GPU (e.g. RTX 3060); CPU being 3–5× slower 
 - Backend: `cd backend && uvicorn app.main:app --reload`
 - Frontend: `cd frontend && npm run dev`
 - Tests: `cd backend && pytest`
+- Desktop app (Windows): double-click the **PieCut** shortcut (created by `desktop/install_shortcuts.ps1`) or `PieCut.pyw`. It builds `frontend/dist` when stale, starts the backend hidden with `SERVE_FRONTEND=1` on port 8765+, opens a pywebview window and stops the backend on close.
 
 ## Working rules for Claude
 - Follow the phases in `PROMPTS.md`. Finish and verify one phase before starting the next.

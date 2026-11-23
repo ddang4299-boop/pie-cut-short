@@ -1,4 +1,6 @@
-# ShortForge Local
+# PieCut
+
+<img src="frontend/public/piecut.svg" width="72" alt="PieCut logo">
 
 Turn long videos into 9:16 shorts on your own machine: import → AI proposes moments → you review →
 captions, reframing and optional ElevenLabs voiceover → you edit → export MP4 + a CapCut bundle.
@@ -23,7 +25,46 @@ cd ..\remotion && npm install
 without ElevenLabs the voice features are disabled with a notice; without an LLM key the default
 moment finder is Claude Code (your subscription) and `heuristic` works fully offline.
 
-## Run
+## Desktop app (Windows)
+PieCut runs as a normal Windows program in its own window (Microsoft Edge WebView2, built into Windows 11),
+with no browser and no terminals.
+
+One-time setup, after the steps above:
+```
+powershell -ExecutionPolicy Bypass -File desktop\install_shortcuts.ps1
+```
+This adds a **PieCut** shortcut to the Desktop and the Start Menu (pin it to the taskbar if you like).
+Opening it:
+1. Builds the UI into `frontend/dist` the first time, and again whenever the frontend source changed (about 10 s).
+2. Starts the backend hidden on `127.0.0.1:8765` (the next free port if that one is taken) and shows a
+   splash screen until it answers.
+3. Opens the full app. Language, layout and other per-user settings persist between runs.
+
+Closing the window stops the backend and anything it started (renders, ffmpeg). Unfinished jobs resume from
+their last step the next time PieCut opens. If something goes wrong, the splash screen shows the error and the logs
+are in `data/logs/desktop.log` and `data/logs/desktop_backend.log`. You can also double-click `PieCut.pyw` directly.
+Run the shortcut script again if the repo folder moves. For development, keep using the two-terminal setup below
+(hot reload).
+
+### Ứng dụng desktop (Windows) — tiếng Việt
+PieCut chạy như một phần mềm Windows bình thường trong cửa sổ riêng (dùng Microsoft Edge WebView2 có sẵn trong
+Windows 11), không cần mở trình duyệt hay terminal.
+
+Cài một lần, sau các bước Setup ở trên:
+```
+powershell -ExecutionPolicy Bypass -File desktop\install_shortcuts.ps1
+```
+Lệnh này tạo lối tắt **PieCut** trên Desktop và trong Start Menu (có thể ghim vào taskbar). Khi mở:
+1. Lần đầu (và mỗi khi mã nguồn giao diện thay đổi) app tự dựng giao diện vào `frontend/dist` (khoảng 10 giây).
+2. Backend chạy ẩn ở `127.0.0.1:8765` (hoặc cổng trống kế tiếp); màn hình chờ hiện cho tới khi backend sẵn sàng.
+3. Mở toàn bộ ứng dụng. Ngôn ngữ, bố cục và các cài đặt cá nhân được giữ giữa các lần mở.
+
+Đóng cửa sổ sẽ dừng backend và mọi tác vụ nó đang chạy (render, ffmpeg). Tác vụ dang dở sẽ tiếp tục từ bước còn
+thiếu ở lần mở sau. Nếu có lỗi, màn hình chờ hiển thị thông báo; log nằm ở `data/logs/desktop.log` và
+`data/logs/desktop_backend.log`. Bạn cũng có thể nhấp đúp trực tiếp vào `PieCut.pyw`. Nếu di chuyển thư mục dự án,
+hãy chạy lại script tạo lối tắt. Khi phát triển, vẫn dùng cách chạy hai terminal bên dưới (tự tải lại khi sửa code).
+
+## Run (development)
 Two terminals:
 ```
 cd backend && ..\.venv\Scripts\uvicorn app.main:app --reload     # http://127.0.0.1:8000

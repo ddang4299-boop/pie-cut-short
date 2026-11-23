@@ -79,6 +79,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+if get_settings().serve_frontend:  # desktop app (PieCut.pyw): serve the built UI, accept /api/...
+    from app.desktop import FrontendMiddleware
+
+    app.add_middleware(FrontendMiddleware, dist=get_settings().frontend_dist_path)
+
 
 # --------------------------------------------------------------------------
 # Errors -> {"code", "severity", "params"} (translated by the frontend)
