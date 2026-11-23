@@ -16,6 +16,7 @@ from __future__ import annotations
 import errno
 import logging
 import subprocess
+import sys
 import threading
 import traceback
 from collections.abc import Callable
@@ -30,7 +31,7 @@ from app.models import JOB_ACTIVE, JOB_CANCELLED, JOB_DONE, JOB_ERROR, JOB_QUEUE
 
 log = logging.getLogger("shortforge.jobs")
 
-LANES = ("main", "download", "edit")
+LANES = ("main", "download", "edit", "render")
 PROGRESS_WRITE_INTERVAL = 0.5  # seconds
 TEMP_PATTERNS = ("*.tmp", "*.part", "*.tmp.*", "*.ytdl")
 MAX_ATTEMPTS = 3  # a job interrupted this many times is not resumed again
@@ -97,10 +98,16 @@ class JobContext:
 
 
 def _kill(proc: subprocess.Popen) -> None:
+    """Kill a child process and, on Windows, its whole tree (node -> headless browser)."""
     try:
+        if proc.poll() is not None:
+            return
+        if sys.platform == "win32":
+            subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True,
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0), timeout=10)
         if proc.poll() is None:
             proc.kill()
-    except OSError:
+    except (OSError, subprocess.SubprocessError):
         pass
 
 
@@ -118,7 +125,7 @@ class JobQueue:
         self._wake = {lane: threading.Event() for lane in LANES}
         self._lock = threading.Lock()
         self._cancel_requested: set[int] = set()
-        self._processes: dict[int, subprocess.Popen] = {}
+        self._processes: dict[int, list[subprocess.Popen]] = {}
         self._log_lock = threading.Lock()
 
     # -- setup --------------------------------------------------------------
@@ -162,8 +169,9 @@ class JobQueue:
     def stop(self, timeout: float = 5.0) -> None:
         self._stop.set()
         with self._lock:
-            for job_id, proc in list(self._processes.items()):
-                _kill(proc)
+            for procs in list(self._processes.values()):
+                for proc in procs:
+                    _kill(proc)
         for ev in self._wake.values():
             ev.set()
         for t in self._threads:
@@ -202,8 +210,8 @@ class JobQueue:
             if job.status == JOB_RUNNING:
                 with self._lock:
                     self._cancel_requested.add(job_id)
-                    proc = self._processes.get(job_id)
-                if proc is not None:
+                    procs = list(self._processes.get(job_id, []))
+                for proc in procs:
                     _kill(proc)
                 self.append_log(job_id, "cancel requested")
             return job
@@ -221,7 +229,8 @@ class JobQueue:
 
     def attach_process(self, job_id: int, proc: subprocess.Popen) -> None:
         with self._lock:
-            self._processes[job_id] = proc
+            alive = [p for p in self._processes.get(job_id, []) if p.poll() is None]
+            self._processes[job_id] = alive + [proc]
 
     # -- logs ---------------------------------------------------------------
     def log_path(self, job_id: int) -> Path:

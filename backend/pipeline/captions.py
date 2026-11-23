@@ -167,6 +167,10 @@ def _bgr(hex_color: str, alpha: int = 0) -> str:
     return f"&H{alpha:02X}{c[4:6]}{c[2:4]}{c[0:2]}".upper()
 
 
+# libass sizes a font by its Windows ascent + descent (GDI behaviour), CSS by its em: for the
+# bundled Be Vietnam Pro (usWinAscent 1261 + usWinDescent 265, 1000 units/em) that is 1.526 em.
+ASS_SIZE_PER_EM = 1.526
+
 HIGHLIGHT = "#FFD400"
 EMPHASIS = "#FF3D7F"
 BOUNCE_COLORS = ("#FFD400", "#3DDC97", "#4FC3F7", "#FF6B6B", "#C77DFF")
@@ -181,12 +185,16 @@ def to_ass(edl: dict[str, Any]) -> str:
     captions = edl.get("captions") or {}
     style = captions.get("style", "bold")
     scale = w / 1080
-    size = int(round(captions.get("font_size", 72) * scale))
-    outline = max(2, round(size * (0.12 if style == "bold" else 0.08 if style == "bounce" else 0.0)))
-    bold = -1 if style in ("bold", "bounce") else 0
+    css = captions.get("font_size", 72) * scale  # CSS px, as in the Remotion composition
+    size = int(round(css * ASS_SIZE_PER_EM))
+    # CSS text-stroke is centered on the outline and half hidden under the fill (paint-order)
+    outline = max(2, round(css * (0.07 if style == "bold" else 0.045 if style == "bounce" else 0.0)))
+    # font weights as in the Remotion composition (libass takes a weight in the Bold field)
+    bold = {"bold": 900, "bounce": 800}.get(style, 600)
     shadow = 2 if style == "clean" else 0
     hook = edl.get("hook_text") or {}
-    hook_size = int(round(60 * scale))
+    hook_css = 58 * scale
+    hook_size = int(round(hook_css * ASS_SIZE_PER_EM))
     lines = [
         "[Script Info]",
         "ScriptType: v4.00+",
@@ -201,8 +209,8 @@ def to_ass(edl: dict[str, Any]) -> str:
         "MarginR, MarginV, Encoding",
         f"Style: Caption,{FONT_FAMILY},{size},&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,{bold},0,0,0,100,100,0,0,1,"
         f"{outline},{shadow},5,{int(w * 0.06)},{int(w * 0.06)},0,1",
-        f"Style: Hook,{FONT_FAMILY},{hook_size},&H00000000,&H00000000,&H00FFFFFF,&H00FFFFFF,-1,0,0,0,100,100,0,0,3,"
-        f"{int(hook_size * 0.35)},0,5,{int(w * 0.07)},{int(w * 0.07)},0,1",
+        f"Style: Hook,{FONT_FAMILY},{hook_size},&H00000000,&H00000000,&H00FFFFFF,&H00FFFFFF,800,0,0,0,100,100,0,0,3,"
+        f"{int(hook_css * 0.4)},0,5,{int(w * 0.07 + hook_css * 0.6)},{int(w * 0.07 + hook_css * 0.6)},0,1",
         "",
         "[Events]",
         "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",

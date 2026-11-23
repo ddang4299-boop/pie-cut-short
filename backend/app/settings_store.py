@@ -30,7 +30,11 @@ DEFAULTS: dict[str, Any] = {
     "moments_wanted": [8, 12],
     "voice_default_id": "",
     "voice_model": "eleven_flash_v2_5",
+    "renderer": "remotion",  # remotion | ffmpeg
+    "platform_presets": {},  # per-platform overrides of pipeline.presets.DEFAULT_PRESETS
+    "output_dir": "",  # "" = <data>/output
 }
+RENDERERS = ("remotion", "ffmpeg")
 
 
 def _validate(key: str, value: Any) -> Any:
@@ -49,6 +53,21 @@ def _validate(key: str, value: Any) -> Any:
         raise bad
     if key == "voice_model" and value not in VOICE_MODELS:
         raise bad
+    if key == "renderer" and value not in RENDERERS:
+        raise bad
+    if key == "output_dir" and not (isinstance(value, str) and len(value) <= 500):
+        raise bad
+    if key == "platform_presets":
+        from pipeline.presets import PLATFORMS as PRESET_PLATFORMS, resolve
+
+        if not isinstance(value, dict) or not set(value) <= set(PRESET_PLATFORMS):
+            raise bad
+        if not all(isinstance(v, dict) for v in value.values()):
+            raise bad
+        # keep only the keys the preset understands, clamped
+        value = {p: {k: resolve(p, value)[k] for k in v if k in ("max_seconds", "video_bitrate_mbps",
+                                                                  "audio_bitrate_kbps", "fps")}
+                 for p, v in value.items()}
     if key == "rubric_weights":
         if not isinstance(value, dict) or set(value) != set(RUBRIC):
             raise bad

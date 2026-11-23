@@ -22,6 +22,8 @@ function place(l: number, t: number, w: number, h: number, srcW: number, srcH: n
   return { position: "absolute", left: -l * sx, top: -t * sy, width: srcW * sx, height: srcH * sy, maxWidth: "none" };
 }
 
+const BG_SCALE = 4;
+
 const volumeOf = (db: number) => Math.min(1, Math.pow(10, db / 20));
 
 function Framed({ props, seg, fromFrame }: { props: CompositionProps; seg: { start: number; end: number }; fromFrame: number }) {
@@ -57,12 +59,16 @@ function Framed({ props, seg, fromFrame }: { props: CompositionProps; seg: { sta
     const blur = Math.round((45 * W) / 1080);
     return (
       <AbsoluteFill>
-        <OffthreadVideo
-          src={src}
-          {...trim}
-          muted
-          style={{ position: "absolute", left: (W - sw * cover) / 2, top: (H - sh * cover) / 2, width: sw * cover, height: sh * cover, maxWidth: "none", filter: `blur(${blur}px) brightness(0.7)` }}
-        />
+        {/* the blurred background is drawn at 1/4 size and scaled up: a CSS blur costs pixels x
+            radius, so this is ~60x cheaper to render and looks the same (it is low-frequency) */}
+        <div style={{ position: "absolute", left: (W - sw * cover) / 2, top: (H - sh * cover) / 2, width: (sw * cover) / BG_SCALE, height: (sh * cover) / BG_SCALE, transform: `scale(${BG_SCALE})`, transformOrigin: "0 0", overflow: "hidden" }}>
+          <OffthreadVideo
+            src={src}
+            {...trim}
+            muted
+            style={{ width: "100%", height: "100%", maxWidth: "none", filter: `blur(${blur / BG_SCALE}px) brightness(0.7)` }}
+          />
+        </div>
         <OffthreadVideo
           src={src}
           {...trim}
