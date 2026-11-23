@@ -1,0 +1,4 @@
+PARTIAL: Phase 3 done except checking face tracking on a real talking-head video (sample has no face; see BLOCKED.md).
+Clips: created on approve, rough cut (stream copy, +/-2 s), reframe in the vision child process: face / active speaker / facecam split / HOG person / center / cursor (blur fallback); One-Euro + dead zone + 25%/s speed cap + RDP.
+Clip Editor: 9:16 canvas preview (same math as backend, shared vectors), draggable crop box, keyframes, split regions, audio tab, multi-track timeline, S/Delete/F, undo 100, autosave 500 ms, safe zones.
+Tests: pytest 200 passed, vitest 41 passed, build ok, smoke all passed (editor: keyframe edit redraws preview in ~57 ms).
