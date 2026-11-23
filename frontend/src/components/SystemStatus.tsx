@@ -114,7 +114,7 @@ export function SystemStatus() {
   }
 
   return (
-    <section data-testid="system-status" className="rounded-xl border border-line bg-panel p-5">
+    <section data-testid="system-status" className="rounded-xl border border-line bg-panel surface p-5">
       {header}
       {body}
     </section>

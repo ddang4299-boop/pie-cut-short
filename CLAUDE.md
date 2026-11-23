@@ -140,7 +140,10 @@ Defaults only; editable in Settings.
 
 ### Conventions
 - **Layout:** 64px icon-only left sidebar with tooltips (Library, Moments, Editor, Export, Settings). Header: current source name, language switcher (EN / VI), running-jobs badge (click → "Jobs" drawer with progress + logs).
-- **Colors (dark):** background `#0B0B0F`, panels `#15151C`, borders `#26262F`, text `#EDEDED`, secondary text `#9A9AA5`, **one** accent `#FF3D7F`, success `#3DDC97`, warning `#FFB020`, error `#FF5A5A`. UI font Inter (with Vietnamese subset), timecodes JetBrains Mono.
+- **App name:** PieCut (logo: a cookie as a film director in sunglasses, `frontend/public/piecut.svg` + `Logo.tsx`).
+- **Style** (reference: `sampleUIUX/website/`, dark Resend-like): black page with a soft top glow, hairline translucent borders, gradient surface cards (`.surface`), gradient page titles (`.text-gradient`), **white primary buttons with black text** (`.btn-primary`), pills for badges. Tokens live in `frontend/src/index.css`.
+- **Colors (dark):** background `#000`, panels `#0A0A0A`, elevated `#111`, borders `rgb(255 255 255 / .09)` (strong `.16`), text `#FAFAFA`, secondary text `#A1A1AA`, subtle `#71717A`, **one** accent violet `#7C5CFF`, success `#3ECF8E`, warning `#F5B544`, error `#F0616D`. UI font Inter (with Vietnamese subset), timecodes JetBrains Mono, Instrument Serif only for the Latin "PieCut" wordmark (no Vietnamese glyphs).
+- `scripts/screens.mjs` screenshots every page in EN + VI and builds a side-by-side sheet with the style reference.
 - **Timecodes** shown as `mm:ss.ff` everywhere; every time field accepts typing or horizontal drag-to-scrub.
 - **Every screen has 3 states:** empty (one-line guidance + primary action), loading (skeleton), error (plain-language message + "Retry" + "View log").
 - **Autosave** with 500ms debounce, "Saving… / Saved" indicator in the header. **Undo/Redo** based on EDL history (100 steps) in Moments and Editor.

@@ -10,8 +10,8 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
   return (
     <div className="mb-6 flex items-end justify-between gap-4">
       <div className="min-w-0">
-        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
-        {subtitle && <p className="mt-1 text-sm text-muted">{subtitle}</p>}
+        <h1 className="pb-0.5 text-[28px] leading-tight font-medium tracking-[-0.03em] text-gradient">{title}</h1>
+        {subtitle && <p className="mt-1.5 text-sm text-muted">{subtitle}</p>}
       </div>
       {actions}
     </div>
@@ -32,14 +32,16 @@ export function EmptyState({
       type="button"
       onClick={action.onClick}
       disabled={action.disabled}
-      className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-40"
+      className="btn-primary rounded-xl px-5 py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-40"
     >
       {action.label}
     </button>
   );
   return (
-    <div data-testid="empty-state" className="flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-line bg-panel/50 px-8 py-16 text-center">
-      <Icon className="size-10 text-muted" strokeWidth={1.5} />
+    <div data-testid="empty-state" className="surface glow-top flex flex-col items-center justify-center gap-5 overflow-hidden rounded-2xl border px-8 py-16 text-center">
+      <div className="glow-icon size-[68px]">
+        <Icon className="size-8" strokeWidth={1.5} />
+      </div>
       <p className="max-w-lg text-sm text-muted">{message}</p>
       {button && <Tooltip label={action.tooltip ?? action.label}>{button}</Tooltip>}
     </div>
@@ -70,7 +72,7 @@ export function ErrorState({ message, onRetry, log }: { message: string; onRetry
           <button
             type="button"
             onClick={onRetry}
-            className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent/90"
+            className="btn-primary flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs"
           >
             <RotateCw className="size-3.5" />
             {t("common.retry")}

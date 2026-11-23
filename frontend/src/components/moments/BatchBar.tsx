@@ -36,7 +36,7 @@ export function BatchBar({
         <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 text-muted">
           <input
             type="checkbox"
-            className="size-3.5 accent-[#FF3D7F]"
+            className="size-3.5 accent-[#7c5cff]"
             data-testid="check-all"
             disabled={!visibleIds.length}
             checked={all}

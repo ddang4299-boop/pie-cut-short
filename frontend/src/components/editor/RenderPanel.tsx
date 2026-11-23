@@ -107,7 +107,7 @@ export function RenderPanel({
           data-testid="render-clip"
           disabled={sending || active}
           onClick={() => void start()}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex w-full items-center justify-center gap-2 rounded-lg btn-primary px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Clapperboard className="size-4" />
           {t("pages.editor.render_button")}

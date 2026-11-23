@@ -386,7 +386,7 @@ export function HookTab({ edl, duration, onHook }: { edl: Edl; duration: number;
   );
 }
 
-const BAR_COLORS = ["#FFD400", "#FF3D7F", "#3DDC97", "#4FC3F7", "#FFFFFF"];
+const BAR_COLORS = ["#FFD400", "#7c5cff", "#3DDC97", "#4FC3F7", "#FFFFFF"];
 
 /** Pick a channel preset (Settings → Channels) and apply it to this clip (undoable). */
 function ChannelPicker({ onApply }: { onApply: (c: Channel) => void }) {

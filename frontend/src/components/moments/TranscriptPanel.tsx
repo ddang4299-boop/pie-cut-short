@@ -137,7 +137,7 @@ export const TranscriptPanel = memo(function TranscriptPanel({
             window.getSelection()?.removeAllRanges();
             setPending(null);
           }}
-          className="absolute z-30 flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium whitespace-nowrap text-white shadow-lg shadow-black/50 hover:bg-accent/90"
+          className="absolute z-30 flex items-center gap-1.5 rounded-lg btn-primary px-3 py-1.5 text-xs whitespace-nowrap shadow-lg shadow-black/50"
           style={{ left: pending.x, top: pending.y }}
         >
           <Plus className="size-3.5" />

@@ -122,7 +122,7 @@ export function SourceCard({ source, lastJob, onOpenTranscript }: { source: Sour
       data-testid="source-card"
       data-source-id={source.id}
       data-status={source.status}
-      className="flex flex-col rounded-xl border border-line bg-panel"
+      className="flex flex-col rounded-xl border border-line bg-panel surface"
     >
       {/* Thumbnail */}
       <div className="relative aspect-video overflow-hidden rounded-t-xl bg-app">
@@ -312,7 +312,7 @@ export function SourceCard({ source, lastJob, onOpenTranscript }: { source: Sour
                   type="button"
                   onClick={() => void copyCommand()}
                   data-testid="copy-command"
-                  className="flex shrink-0 items-center gap-1.5 rounded-md bg-accent px-2.5 py-1 text-[11px] font-medium text-white hover:bg-accent/90"
+                  className="flex shrink-0 items-center gap-1.5 rounded-md btn-primary px-2.5 py-1 text-[11px]"
                 >
                   <Copy className="size-3" />
                   {t("pages.library.copy_command")}
@@ -402,7 +402,7 @@ export function SourceCard({ source, lastJob, onOpenTranscript }: { source: Sour
                 onClick={() => void start()}
                 disabled={busy}
                 data-testid="start-button"
-                className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-1.5 text-xs font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg btn-primary px-4 py-1.5 text-xs disabled:opacity-50"
               >
                 <Play className="size-3.5" />
                 {t("common.start")}
@@ -420,7 +420,7 @@ export function SourceCard({ source, lastJob, onOpenTranscript }: { source: Sour
                 disabled={busy}
                 onClick={() => void start()}
                 data-testid="retry-button"
-                className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg btn-primary px-3 py-1.5 text-xs disabled:opacity-50"
               >
                 <RotateCw className="size-3.5" />
                 {t("common.retry")}
@@ -448,7 +448,7 @@ export function SourceCard({ source, lastJob, onOpenTranscript }: { source: Sour
                 onClick={openMoments}
                 data-testid="open-moments"
                 className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
-                  source.status === "ready" ? "bg-accent text-white hover:bg-accent/90" : "border border-line text-fg hover:bg-white/5"
+                  source.status === "ready" ? "btn-primary" : "border border-line text-fg hover:bg-white/5"
                 }`}
               >
                 {t("pages.library.open_moments")}
@@ -523,7 +523,7 @@ export function SourceCard({ source, lastJob, onOpenTranscript }: { source: Sour
             checked={deleteMedia}
             onChange={(e) => setDeleteMedia(e.target.checked)}
             data-testid="delete-media-checkbox"
-            className="mt-0.5 accent-[#FF3D7F]"
+            className="mt-0.5 accent-[#7c5cff]"
           />
           <span>{t("pages.library.delete_media")}</span>
         </label>

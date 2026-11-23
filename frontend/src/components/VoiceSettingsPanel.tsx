@@ -36,7 +36,7 @@ export function VoiceSettingsPanel() {
   };
 
   return (
-    <section className="rounded-xl border border-line bg-panel p-5" data-testid="voice-settings">
+    <section className="rounded-xl border border-line bg-panel surface p-5" data-testid="voice-settings">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold">{t("pages.settings.voice_title")}</h2>

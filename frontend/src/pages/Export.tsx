@@ -52,7 +52,7 @@ const busy = (c: ExportClip) => isActive(c.render) || isActive(c.capcut) || c.bu
 const btn =
   "flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1.5 text-xs hover:border-accent disabled:cursor-not-allowed disabled:opacity-40";
 const primaryBtn =
-  "flex items-center gap-1.5 rounded-md bg-accent px-2.5 py-1.5 text-xs font-medium text-white hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-40";
+  "flex items-center gap-1.5 rounded-md btn-primary px-2.5 py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-40";
 
 /** Export: render queue, finished clips, CapCut bundle + round-trip import, batch render. */
 export default function Export() {
@@ -300,7 +300,7 @@ function QueueRow({
   const task: ExportTask<unknown> = isRender ? clip.render : clip.capcut;
   const left = task.state === "running" ? remainingSeconds(task.started_at, task.progress, now) : null;
   return (
-    <li data-testid={`queue-${clip.id}`} className="rounded-lg border border-line bg-panel px-4 py-3">
+    <li data-testid={`queue-${clip.id}`} className="rounded-lg border border-line bg-panel surface px-4 py-3">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium">{title}</p>
@@ -389,7 +389,7 @@ function ClipRow({
   const warnings = [...(state === "done" ? (info?.warnings ?? []) : []), ...(clip.length_warning && !(info?.warnings ?? []).some((w) => w.code === "CLIP_TOO_LONG") ? [{ code: "CLIP_TOO_LONG", params: clip.length_warning }] : [])];
 
   return (
-    <li data-testid={`export-${clip.id}`} className="flex gap-4 rounded-lg border border-line bg-panel p-3">
+    <li data-testid={`export-${clip.id}`} className="flex gap-4 rounded-lg border border-line bg-panel surface p-3">
       <input
         type="checkbox"
         aria-label={t("pages.export.select", { title })}

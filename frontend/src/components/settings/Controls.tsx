@@ -7,7 +7,7 @@ export const inputCls = selectCls;
 /** A Settings card: title, one-line hint, body. */
 export function Card({ title, hint, actions, children, testId }: { title: string; hint?: string; actions?: ReactNode; children: ReactNode; testId?: string }) {
   return (
-    <section className="rounded-xl border border-line bg-panel p-5" data-testid={testId}>
+    <section className="rounded-xl border border-line bg-panel surface p-5" data-testid={testId}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold">{title}</h2>
@@ -114,7 +114,7 @@ export function TextInput({ value, onCommit, placeholder, testId, label, maxLeng
 export function Toggle({ checked, onChange, label, testId }: { checked: boolean; onChange: (v: boolean) => void; label: string; testId?: string }) {
   return (
     <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
-      <input type="checkbox" className="size-4 accent-[#FF3D7F]" checked={checked} data-testid={testId} onChange={(e) => onChange(e.target.checked)} />
+      <input type="checkbox" className="size-4 accent-[#7c5cff]" checked={checked} data-testid={testId} onChange={(e) => onChange(e.target.checked)} />
       {label}
     </label>
   );

@@ -12,9 +12,13 @@ export function Header({ onOpenJobs }: { onOpenJobs: () => void }) {
   const { currentSource, activeJobCount: runningJobs } = useSources();
   const { status: saveStatus } = useSaveStatus();
   return (
-    <header className="flex h-14 shrink-0 items-center gap-4 border-b border-line bg-panel px-5">
+    <header className="relative z-20 flex h-14 shrink-0 items-center gap-4 border-b border-line bg-black/70 px-5 backdrop-blur-md backdrop-saturate-150">
+      <span className="font-serif text-[26px] leading-none tracking-tight text-gradient" data-testid="app-wordmark">
+        {t("app.name")}
+      </span>
+      <span className="h-6 w-px bg-line" aria-hidden />
       <div className="min-w-0 flex-1">
-        <div className="text-[11px] uppercase tracking-wide text-muted">{t("header.current_source")}</div>
+        <div className="text-[11px] uppercase tracking-wide text-subtle">{t("header.current_source")}</div>
         <div
           className={`truncate text-sm ${currentSource ? "text-fg" : "text-muted"}`}
           data-testid="current-source"
@@ -44,13 +48,13 @@ export function Header({ onOpenJobs }: { onOpenJobs: () => void }) {
           type="button"
           onClick={onOpenJobs}
           data-testid="jobs-button"
-          className="flex items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-xs text-fg hover:bg-white/5"
+          className="flex items-center gap-2 rounded-full border border-line bg-white/[0.04] px-3 py-1.5 text-xs text-fg transition-colors hover:border-line-strong hover:bg-white/[0.07]"
         >
           <ListChecks className="size-4 text-muted" />
           {t("header.jobs")}
           <span
             className={`min-w-5 rounded-full px-1.5 text-center font-mono text-[11px] ${
-              runningJobs > 0 ? "bg-accent text-white" : "bg-white/10 text-muted"
+              runningJobs > 0 ? "bg-accent text-white shadow-[0_0_12px_rgba(124,92,255,0.6)]" : "bg-white/10 text-muted"
             }`}
           >
             {runningJobs}

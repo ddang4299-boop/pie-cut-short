@@ -367,7 +367,7 @@ export function VoiceTab({
           data-testid="voice-generate"
           disabled={!canGenerate}
           onClick={() => void run(false)}
-          className="mt-1 flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-40"
+          className="mt-1 flex w-full items-center justify-center gap-2 rounded-lg btn-primary px-3 py-2 text-sm disabled:opacity-40"
         >
           {busy === "generate" ? <Loader2 className="size-4 animate-spin" /> : <AudioLines className="size-4" />}
           <span className="truncate">

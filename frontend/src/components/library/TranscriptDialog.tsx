@@ -84,7 +84,7 @@ export function TranscriptDialog({ source, onClose }: { source: Source; onClose:
         aria-modal="true"
         aria-label={t("pages.transcript.title")}
         data-testid="transcript-dialog"
-        className="flex h-[85vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-line bg-panel shadow-2xl shadow-black/60"
+        className="flex h-[85vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-line bg-panel surface shadow-2xl shadow-black/60"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex h-14 shrink-0 items-center gap-3 border-b border-line px-5">

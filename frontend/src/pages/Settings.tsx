@@ -42,7 +42,7 @@ export default function Settings() {
     <div className="mx-auto max-w-5xl space-y-6 p-6">
       <PageHeader title={t("pages.settings.title")} subtitle={t("pages.settings.subtitle")} />
 
-      <section className="rounded-xl border border-line bg-panel p-5">
+      <section className="rounded-xl border border-line bg-panel surface p-5">
         <h2 className="text-sm font-semibold">{t("pages.settings.language_title")}</h2>
         <p className="mt-1 mb-4 text-sm text-muted">{t("pages.settings.language_hint")}</p>
         <LanguageSwitcher variant="full" />

@@ -102,7 +102,7 @@ export function ImportPanel({ compact }: { compact: boolean }) {
             type="button"
             onClick={() => fileInput.current?.click()}
             data-testid="choose-file"
-            className="mt-1 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90"
+            className="mt-1 rounded-lg btn-primary px-4 py-2 text-sm"
           >
             {t("pages.library.choose_file")}
           </button>
@@ -122,7 +122,7 @@ export function ImportPanel({ compact }: { compact: boolean }) {
       </div>
 
       <form
-        className="rounded-xl border border-line bg-panel p-4"
+        className="rounded-xl border border-line bg-panel surface p-4"
         onSubmit={(e) => {
           e.preventDefault();
           void submitLocation();
@@ -149,7 +149,7 @@ export function ImportPanel({ compact }: { compact: boolean }) {
               type="submit"
               disabled={importing || !location.trim()}
               data-testid="import-button"
-              className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-lg btn-primary px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40"
             >
               {importing ? t("common.loading") : t("pages.library.import")}
             </button>
@@ -161,7 +161,7 @@ export function ImportPanel({ compact }: { compact: boolean }) {
       {uploads.map((item) => {
         const fraction = item.total ? item.loaded / item.total : 0;
         return (
-          <div key={item.key} className="rounded-xl border border-line bg-panel px-4 py-3" data-testid="upload-row">
+          <div key={item.key} className="rounded-xl border border-line bg-panel surface px-4 py-3" data-testid="upload-row">
             <div className="flex items-center gap-3 text-sm">
               <UploadIcon className="size-4 shrink-0 text-accent" />
               <span className="shrink-0 text-muted">{t("pages.library.uploading")}</span>

@@ -47,7 +47,7 @@ export function ConfirmDialog({
         aria-modal="true"
         aria-label={title}
         data-testid="confirm-dialog"
-        className="w-full max-w-md rounded-xl border border-line bg-panel p-5 shadow-2xl shadow-black/60"
+        className="w-full max-w-md rounded-xl border border-line bg-panel surface p-5 shadow-2xl shadow-black/60"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-base font-semibold">{title}</h2>
@@ -69,8 +69,8 @@ export function ConfirmDialog({
               disabled={busy}
               onClick={onConfirm}
               data-testid="confirm-button"
-              className={`rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50 ${
-                danger ? "bg-danger hover:bg-danger/90" : "bg-accent hover:bg-accent/90"
+              className={`rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50 ${
+                danger ? "bg-danger text-white hover:bg-danger/90" : "btn-primary"
               }`}
             >
               {confirmLabel}

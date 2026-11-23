@@ -46,7 +46,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               key={toast.id}
               role={toast.kind === "error" ? "alert" : "status"}
               data-testid={`toast-${toast.kind}`}
-              className="pointer-events-auto flex items-start gap-3 rounded-lg border border-line bg-panel px-4 py-3 text-sm shadow-xl shadow-black/50"
+              className="pointer-events-auto flex items-start gap-3 rounded-lg border border-line bg-panel surface px-4 py-3 text-sm shadow-xl shadow-black/50"
             >
               <Icon className={`mt-0.5 size-4 shrink-0 ${COLORS[toast.kind]}`} />
               <p className="min-w-0 flex-1 break-words">{toast.message}</p>

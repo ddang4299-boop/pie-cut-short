@@ -83,7 +83,7 @@ export const MomentCard = memo(function MomentCard({
         {onCheck && (
           <input
             type="checkbox"
-            className="mt-3 size-3.5 shrink-0 cursor-pointer accent-[#FF3D7F]"
+            className="mt-3 size-3.5 shrink-0 cursor-pointer accent-[#7c5cff]"
             data-testid="moment-check"
             aria-label={t("pages.moments.batch_check", { title })}
             checked={checked}

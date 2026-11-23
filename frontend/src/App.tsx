@@ -39,11 +39,11 @@ export default function App() {
   }, [navigate]);
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full bg-app">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Header onOpenJobs={() => setJobsOpen(true)} />
-        <main className="flex-1 overflow-y-auto">
+        <main className="app-glow flex-1 overflow-y-auto">
           <PageErrorBoundary>
             <Routes>
               <Route path="/" element={<Navigate to="/library" replace />} />

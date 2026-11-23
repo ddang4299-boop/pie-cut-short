@@ -41,7 +41,7 @@ export default function Library() {
         {!loaded && (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(340px,1fr))] gap-4">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="rounded-xl border border-line bg-panel p-4">
+              <div key={i} className="rounded-xl border border-line bg-panel surface p-4">
                 <div className="mb-4 aspect-video animate-pulse rounded-lg bg-white/5" />
                 <Skeleton rows={3} />
               </div>

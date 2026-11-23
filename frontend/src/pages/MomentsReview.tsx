@@ -853,7 +853,7 @@ export default function MomentsReview() {
                 onClick={togglePlay}
                 aria-label={playing ? t("pages.moments.pause") : t("pages.moments.play")}
                 data-testid="play-button"
-                className="flex size-8 items-center justify-center rounded-full bg-accent text-white hover:bg-accent/90"
+                className="flex size-8 items-center justify-center rounded-full btn-primary"
               >
                 {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
               </button>
@@ -1038,7 +1038,7 @@ export default function MomentsReview() {
               disabled={!selected}
               onClick={() => void approveAndOpen()}
               data-testid="approve-open"
-              className="ml-auto flex items-center gap-1.5 rounded-lg bg-accent px-4 py-1.5 text-xs font-medium text-white hover:bg-accent/90 disabled:opacity-40"
+              className="ml-auto flex items-center gap-1.5 rounded-lg btn-primary px-4 py-1.5 text-xs disabled:opacity-40"
             >
               {t("pages.moments.approve_open")}
               <ArrowRight className="size-3.5" />

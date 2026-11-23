@@ -56,7 +56,7 @@ export function Menu({
         <div
           role="menu"
           data-testid={testId}
-          className={`absolute top-full z-30 mt-1 min-w-56 rounded-lg border border-line bg-panel py-1 shadow-xl shadow-black/50 ${
+          className={`absolute top-full z-30 mt-1 min-w-56 rounded-lg border border-line bg-panel surface py-1 shadow-xl shadow-black/50 ${
             align === "right" ? "right-0" : "left-0"
           }`}
         >

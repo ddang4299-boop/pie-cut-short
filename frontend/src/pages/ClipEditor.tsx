@@ -172,7 +172,7 @@ function ClipPicker({ onOpen }: { onOpen: (id: string) => void }) {
     <div className="mx-auto max-w-4xl p-6" data-testid="clip-picker">
       <div className="mb-6 flex items-end justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight">{t("pages.editor.title")}</h1>
+          <h1 className="pb-0.5 text-[28px] leading-tight font-medium tracking-[-0.03em] text-gradient">{t("pages.editor.title")}</h1>
           <p className="mt-1 text-sm text-muted">{t("pages.editor.pick_subtitle")}</p>
         </div>
         {sources.length > 1 && source && (
@@ -183,7 +183,7 @@ function ClipPicker({ onOpen }: { onOpen: (id: string) => void }) {
               setClips(null);
               setCurrentSourceId(e.target.value);
             }}
-            className="max-w-72 min-w-0 rounded-lg border border-line bg-panel px-3 py-2 text-sm"
+            className="max-w-72 min-w-0 rounded-lg border border-line bg-panel surface px-3 py-2 text-sm"
           >
             {sources.map((s) => (
               <option key={s.id} value={s.id}>
@@ -207,7 +207,7 @@ function ClipPicker({ onOpen }: { onOpen: (id: string) => void }) {
                 type="button"
                 data-testid="clip-item"
                 onClick={() => onOpen(c.id)}
-                className="flex w-full items-center gap-4 rounded-lg border border-line bg-panel px-4 py-3 text-left hover:border-muted"
+                className="flex w-full items-center gap-4 rounded-lg border border-line bg-panel surface px-4 py-3 text-left hover:border-muted"
               >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium" data-content>{c.title || t("pages.moments.untitled")}</span>
@@ -860,7 +860,7 @@ function EditorWorkspace({ clipId }: { clipId: string }) {
                 aria-label={playing ? t("pages.moments.pause") : t("pages.moments.play")}
                 onClick={togglePlay}
                 data-testid="editor-play"
-                className="flex size-9 items-center justify-center rounded-full bg-accent text-white hover:bg-accent/90"
+                className="flex size-9 items-center justify-center rounded-full btn-primary"
               >
                 {playing ? <Pause className="size-4" /> : <Play className="size-4 translate-x-px" />}
               </button>

@@ -1,19 +1,27 @@
 @import "tailwindcss";
 
-/* Dark theme from the spec: one accent color, Inter (with Vietnamese subset) + JetBrains Mono. */
+/* PieCut theme: near-black, high-contrast surfaces with hairline translucent borders, one violet
+   accent, white primary buttons, gradient headings (style of sampleUIUX/website). Inter (with the
+   Vietnamese subset) for the UI, JetBrains Mono for timecodes, Instrument Serif for the wordmark. */
 @theme {
-  --color-app: #0b0b0f;
-  --color-panel: #15151c;
-  --color-line: #26262f;
-  --color-fg: #ededed;
-  --color-muted: #9a9aa5;
-  --color-accent: #ff3d7f;
-  --color-success: #3ddc97;
-  --color-warning: #ffb020;
-  --color-danger: #ff5a5a;
+  --color-app: #000000;
+  --color-panel: #0a0a0a;
+  --color-elevated: #111111;
+  --color-line: rgb(255 255 255 / 0.09);
+  --color-line-strong: rgb(255 255 255 / 0.16);
+  --color-fg: #fafafa;
+  --color-muted: #a1a1aa;
+  --color-subtle: #71717a;
+  --color-accent: #7c5cff;
+  --color-success: #3ecf8e;
+  --color-warning: #f5b544;
+  --color-danger: #f0616d;
 
   --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
   --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html,
@@ -28,10 +36,133 @@ body {
   color: var(--color-fg);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  color-scheme: dark;
 }
 
 /* Tabular digits so timecodes and counters don't jitter. */
 .font-mono,
 kbd {
   font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgb(124 92 255 / 0.35);
+}
+
+/* Thin dark scrollbars (Chromium / WebView2). */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.14) transparent;
+}
+
+@layer components {
+  /* Page background: a soft white glow at the top, like the reference hero. */
+  .app-glow {
+    background:
+      radial-gradient(60% 40% at 50% -8%, rgb(255 255 255 / 0.07), transparent 70%),
+      radial-gradient(40% 30% at 85% 0%, rgb(124 92 255 / 0.08), transparent 70%),
+      var(--color-app);
+  }
+
+  /* Cards and panels: a dark vertical gradient with a hairline border. Overrides the flat
+     bg-panel fill wherever a container uses both. */
+  .surface {
+    background-image: linear-gradient(180deg, #0d0d0d, #060606);
+    border-color: var(--color-line);
+  }
+  .surface:hover {
+    border-color: var(--color-line-strong);
+  }
+
+  /* Big headings: white fading to grey, tight tracking. */
+  .text-gradient {
+    background: linear-gradient(180deg, #ffffff 35%, #a1a1aa 130%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .text-gradient-accent {
+    background: linear-gradient(90deg, #c4b5fd, var(--color-accent) 45%, #38bdf8);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Primary button: white on black. */
+  .btn-primary {
+    background: var(--color-fg);
+    color: #000;
+    font-weight: 500;
+    transition:
+      background-color 0.2s,
+      box-shadow 0.2s;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: #fff;
+    box-shadow: 0 0 0 4px rgb(255 255 255 / 0.08);
+  }
+
+  /* Glowing icon tile (empty states, section marks). */
+  .glow-icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+    border-radius: 20px;
+    background: linear-gradient(160deg, #2a2a2e 0%, #0d0d0f 55%, #050505 100%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.18),
+      inset 0 -1px 0 rgb(0 0 0 / 0.6),
+      0 0 0 1px rgb(255 255 255 / 0.06),
+      0 20px 40px -10px rgb(0 0 0 / 0.8);
+    color: var(--glow, var(--color-accent));
+  }
+  .glow-icon::after {
+    content: "";
+    position: absolute;
+    left: 14%;
+    right: 14%;
+    bottom: -10px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--glow, var(--color-accent));
+    filter: blur(18px);
+    opacity: 0.6;
+    z-index: -1;
+  }
+  .glow-icon svg {
+    filter: drop-shadow(0 0 8px var(--glow, var(--color-accent)));
+  }
+
+  /* Hairline glow at the top edge of a section (reference "glow-bar"). */
+  .glow-top {
+    position: relative;
+  }
+  .glow-top::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    translate: -50% 0;
+    width: min(520px, 80%);
+    height: 60px;
+    pointer-events: none;
+    background: radial-gradient(50% 50% at 50% 0%, rgb(255 255 255 / 0.1), transparent);
+    border-top: 1px solid rgb(255 255 255 / 0.1);
+    mask: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent);
+  }
+
+  /* Small pill / badge (reference "pill"). */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    border: 1px solid var(--color-line);
+    background: rgb(255 255 255 / 0.04);
+  }
 }
