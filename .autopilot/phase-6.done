@@ -1,0 +1,5 @@
+PARTIAL: Phase 6 done; phone playback, CapCut import and NVENC (driver >= 610) need a human, see BLOCKED.md.
+Render: Remotion default + FFmpeg/ASS fallback, CFR intermediate, libx264 fallback, -14 LUFS with correction pass, SSIM check, BT.709 tags.
+Export page (queue, batch, cancel, downloads, open folder), editor Render panel, CapCut bundle (EN+VI README, zip), CapCut round-trip import.
+Checks: pytest 240/240, vitest 51/51, npm run build ok, locale parity ok; real API render -14.5 LUFS, SSIM >= 0.997.
+Commits: 63ff16a b53e3bb 79a3e37 62662fb.
