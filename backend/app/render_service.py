@@ -25,7 +25,7 @@ from typing import Any
 
 from sqlmodel import col, select
 
-from app import clips_service, db, errors, jobs, settings_store
+from app import clips_service, db, errors, jobs, music_service, settings_store
 from app.config import get_settings
 from app.models import JOB_ACTIVE, Clip, Job, utcnow
 from pipeline import captions as captions_mod, export_capcut, presets, render
@@ -199,7 +199,7 @@ def _language(src: Any) -> str:
 
 def build_input(clip: Clip, renderer: str, hooks: render.Hooks, *, on_progress: Any = None) -> render.RenderInput:
     """RenderInput for a clip: a frame-accurate intermediate of the clip's source range, plus the
-    Voice Isolator output and voiceover from the voice cache when enabled."""
+    Voice Isolator output and voiceover from the voice cache and the background music track when enabled."""
     settings = get_settings()
     src = clips_service._source(clip.source_id)
     edl = clips_service.seed_captions(clip).edl or {}
@@ -228,10 +228,13 @@ def build_input(clip: Clip, renderer: str, hooks: render.Hooks, *, on_progress: 
         p = settings.data_path / vo["audio_path"]
         if p.exists():
             voiceover, vo_duration = p, vo.get("duration") or _probe_duration(p, settings.ffprobe_bin)
+    music = music_service.resolve(edl.get("music") or {})
+    if (edl.get("music") or {}).get("enabled") and not music:
+        hooks.log("background music: track not found in the library, rendering without it")
     return render.RenderInput(
         edl=edl, media=rsrc, media_offset=lo, src_w=int(src.width or 1920), src_h=int(src.height or 1080),
         has_audio=bool(src.has_audio), language=_language(src), preset=preset, work_dir=wd, out_dir=out_dir(clip),
-        renderer=renderer, isolated=isolated, voiceover=voiceover, vo_duration=vo_duration,
+        renderer=renderer, isolated=isolated, voiceover=voiceover, vo_duration=vo_duration, music=music,
         ffmpeg=settings.ffmpeg_bin, ffprobe=settings.ffprobe_bin, data_dir=settings.data_path)
 
 

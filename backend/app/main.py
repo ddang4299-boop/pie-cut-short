@@ -20,8 +20,8 @@ from pydantic import BaseModel, Field
 from sqlmodel import col, select
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app import (cache_service, channels, clips_service, db, errors, jobs, moments_service, render_service,
-                 settings_store, tasks, voice_service)
+from app import (cache_service, channels, clips_service, db, errors, jobs, moments_service, music_service,
+                 render_service, settings_store, tasks, voice_service)
 from app.config import APP_VERSION, get_settings
 from app.models import (
     JOB_ACTIVE,
@@ -79,7 +79,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 # --------------------------------------------------------------------------
 # Errors -> {"code", "severity", "params"} (translated by the frontend)
@@ -721,6 +720,32 @@ class ConfirmBody(BaseModel):
 @app.get("/voice/status")
 def voice_status(refresh: bool = False) -> dict[str, Any]:
     return voice_service.status(refresh)
+
+
+# --------------------------------------------------------------------------
+# background music library
+# --------------------------------------------------------------------------
+@app.get("/music")
+def music_list() -> list[dict[str, Any]]:
+    return music_service.list_tracks()
+
+
+@app.post("/music/upload")
+async def music_upload(request: Request, name: str = Query(..., min_length=1, max_length=300)) -> dict[str, Any]:
+    """Raw-body upload of an audio file into the music library."""
+    return await music_service.add_track(name, request.stream())
+
+
+@app.get("/music/{track_id}/file")
+def music_file(track_id: str) -> FileResponse:
+    path = music_service.file_for(track_id)
+    return FileResponse(path, headers={"Cache-Control": "max-age=31536000, immutable"})
+
+
+@app.delete("/music/{track_id}")
+def music_delete(track_id: str) -> dict[str, Any]:
+    music_service.delete_track(track_id)
+    return {"deleted": track_id}
 
 
 @app.get("/voice/voices")

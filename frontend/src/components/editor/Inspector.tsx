@@ -10,7 +10,7 @@ import { TimeField } from "../TimeField";
 import { Tooltip } from "../Tooltip";
 import type { SplitPanel } from "./SourceView";
 
-export const INSPECTOR_TABS = ["framing", "captions", "hook", "voice", "audio", "export"] as const;
+export const INSPECTOR_TABS = ["framing", "captions", "hook", "voice", "music", "audio", "export"] as const;
 export type InspectorTab = (typeof INSPECTOR_TABS)[number];
 
 /** Number input that commits on blur / Enter (Esc reverts); arrow keys step. */

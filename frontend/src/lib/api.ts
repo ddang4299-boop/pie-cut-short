@@ -454,11 +454,56 @@ export interface Edl {
     duck_db: number;
   };
   audio: { normalize_lufs: number; isolate_voice: boolean; volume_db: number; isolated_path: string | null; isolated_start: number };
+  music: EdlMusic;
   platform: Platform;
   output: { w: number; h: number; fps: number };
   status: ClipStatus;
 }
 export type EdlSection = Exclude<keyof Edl, "id" | "source_id" | "moment_id" | "status">;
+
+/** Background music of a clip (track from the shared music library). */
+export interface EdlMusic {
+  enabled: boolean;
+  track_id: string | null;
+  name: string;
+  duration: number | null;
+  volume_db: number;
+  start: number;
+  offset: number;
+  fade_in: number;
+  fade_out: number;
+  loop: boolean;
+  duck_db: number;
+}
+
+export const DEFAULT_MUSIC: EdlMusic = {
+  enabled: false, track_id: null, name: "", duration: null, volume_db: -20, start: 0, offset: 0,
+  fade_in: 0.5, fade_out: 1.5, loop: true, duck_db: -10,
+};
+
+// ---------------------------------------------------------------------------
+// Background music library
+// ---------------------------------------------------------------------------
+export interface MusicTrack {
+  id: string;
+  name: string;
+  duration: number | null;
+  size_bytes: number | null;
+  url: string;
+}
+
+export const listMusic = () => apiGet<MusicTrack[]>("/music");
+export const deleteMusic = (id: string) => apiSend<{ deleted: string }>("DELETE", `/music/${id}`);
+export const musicUrl = (id: string | null) => (id ? apiUrl(`/music/${id}/file`) : null);
+
+/** Upload an audio file into the music library (raw body). */
+export async function uploadMusic(file: File): Promise<MusicTrack> {
+  return request<MusicTrack>(`/music/upload?name=${encodeURIComponent(file.name)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/octet-stream" },
+    body: file,
+  });
+}
 
 export interface ClipSummary {
   id: string;

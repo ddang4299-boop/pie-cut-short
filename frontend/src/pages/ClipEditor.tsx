@@ -20,6 +20,7 @@ import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EditorTimeline } from "../components/editor/EditorTimeline";
 import { ClipAudio } from "../components/editor/ClipAudio";
 import { AudioTab, FramingTab, INSPECTOR_TABS, type InspectorTab } from "../components/editor/Inspector";
+import { MusicTab } from "../components/editor/MusicTab";
 import { PreviewCanvas, type Guide } from "../components/editor/PreviewCanvas";
 import { RenderPanel } from "../components/editor/RenderPanel";
 import { CaptionsTab, ExportTab, HookTab } from "../components/editor/TextTabs";
@@ -66,7 +67,7 @@ import { frameStep, HISTORY_LIMIT } from "../lib/moments";
 import { useSaveStatus } from "../state/save";
 import { useSources } from "../state/sources";
 
-const SECTIONS: EdlSection[] = ["segments", "crop", "captions", "hook_text", "progress_bar", "voiceover", "audio", "platform", "output"];
+const SECTIONS: EdlSection[] = ["segments", "crop", "captions", "hook_text", "progress_bar", "voiceover", "audio", "music", "platform", "output"];
 const LAST_CLIP_KEY = "shortforge.editor.lastClip";
 const SAFE_KEY = "shortforge.editor.safeZones";
 const TIME_KEY = (id: string) => `shortforge.editor.${id}`;
@@ -897,7 +898,8 @@ function EditorWorkspace({ clipId }: { clipId: string }) {
         </div>
 
         <aside className="flex min-h-0 flex-col border-l border-line bg-panel">
-          <div className="flex shrink-0 overflow-x-auto border-b border-line" role="tablist" aria-label={t("pages.editor.inspector")}>
+          {/* pills that wrap to a second row when the labels don't fit (Vietnamese), never truncated */}
+          <div className="flex shrink-0 flex-wrap gap-1 border-b border-line p-2" role="tablist" aria-label={t("pages.editor.inspector")}>
             {INSPECTOR_TABS.map((key) => (
               <button
                 key={key}
@@ -906,7 +908,9 @@ function EditorWorkspace({ clipId }: { clipId: string }) {
                 aria-selected={tab === key}
                 data-testid={`tab-${key}`}
                 onClick={() => setTab(key)}
-                className={`min-w-0 flex-auto truncate border-b-2 px-1.5 py-2.5 text-xs whitespace-nowrap ${tab === key ? "border-accent text-fg" : "border-transparent text-muted hover:text-fg"}`}
+                className={`flex-auto rounded-full border px-2.5 py-1 text-xs whitespace-nowrap transition-colors ${
+                  tab === key ? "border-line-strong bg-white/[0.08] text-fg" : "border-transparent text-muted hover:bg-white/[0.04] hover:text-fg"
+                }`}
               >
                 {t(`pages.editor.tab.${key}`)}
               </button>
@@ -937,6 +941,8 @@ function EditorWorkspace({ clipId }: { clipId: string }) {
                 onVoiceover={(v) => setSection("voiceover", v, "record", "duck")}
                 isolate={<IsolateToggle clip={clip} edl={edl} onAudio={(a) => setSection("audio", a)} onBeforeCall={flush} onServerClip={adoptServer} />}
               />
+            ) : tab === "music" ? (
+              <MusicTab edl={edl} clipTime={time} duration={duration} onMusic={(m, mode, key) => setSection("music", m, mode, key)} />
             ) : tab === "voice" ? (
               <VoiceTab
                 clip={clip}
@@ -979,7 +985,7 @@ function EditorWorkspace({ clipId }: { clipId: string }) {
         </aside>
       </div>
 
-      <div className="h-[220px] shrink-0">
+      <div className="h-[228px] shrink-0">
         <EditorTimeline
           edl={edl}
           time={time}

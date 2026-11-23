@@ -7,7 +7,7 @@ import { pagesOf } from "../../lib/captions";
 import { formatTimecode } from "../../lib/format";
 
 const LABEL_W = 104;
-const TRACK_H = 30;
+const TRACK_H = 28;
 const MIN_PPS = 4;
 const MAX_PPS = 400;
 
@@ -59,6 +59,13 @@ export function EditorTimeline({
   const voDrag = useRef<{ x: number; start: number; moved: boolean } | null>(null);
   const vo = edl.voiceover;
   const voDur = vo.duration ?? 0;
+  // background music span in clip time (shown even when disabled, struck through)
+  const music = useMemo(() => {
+    const m = edl.music;
+    if (!m?.track_id || !m.duration) return null;
+    const end = m.loop ? duration : Math.min(duration, m.start + Math.max(0, m.duration - m.offset));
+    return end > m.start + 0.01 ? { start: m.start, end } : null;
+  }, [edl.music, duration]);
 
   useEffect(() => {
     const el = scroller.current;
@@ -129,7 +136,7 @@ export function EditorTimeline({
   const step = rulerStep(scale);
   const ticks: number[] = [];
   for (let s = 0; s <= duration + 1e-6; s += step) ticks.push(s);
-  const tracks = ["video", "captions", "hook", "voiceover", "audio", "crop"] as const;
+  const tracks = ["video", "captions", "hook", "voiceover", "music", "audio", "crop"] as const;
   const x = (s: number) => 8 + s * scale;
 
   return (
@@ -255,6 +262,24 @@ export function EditorTimeline({
               >
                 {vo.script}
               </div>
+            )}
+          </div>
+          {/* background music: click to jump to its start */}
+          <div className="relative border-t border-line/50" style={{ height: TRACK_H }} data-testid="track-music">
+            {music && (
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => onSeek(music.start)}
+                data-testid="music-block"
+                className={`absolute top-1.5 bottom-1.5 truncate rounded border px-1.5 text-left text-[10px] leading-[14px] ${
+                  edl.music.enabled ? "border-accent/70 bg-accent/20 text-[#c4b5fd]" : "border-line bg-white/5 text-muted line-through"
+                }`}
+                style={{ left: x(music.start), width: Math.max(6, (music.end - music.start) * scale) }}
+                title={`${edl.music.name} · ${formatTimecode(music.start)} – ${formatTimecode(music.end)}`}
+              >
+                {edl.music.name}
+              </button>
             )}
           </div>
           {/* audio */}

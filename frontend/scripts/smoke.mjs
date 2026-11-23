@@ -327,7 +327,7 @@ async function editorChecks(context, moment) {
 
   // Vietnamese layout + every tab
   await page.getByTestId("lang-vi").click();
-  for (const tab of ["framing", "captions", "hook", "voice", "audio", "export"]) {
+  for (const tab of ["framing", "captions", "hook", "voice", "music", "audio", "export"]) {
     await page.getByTestId(`tab-${tab}`).click();
     const overflow = await page.evaluate(OVERFLOW);
     check(overflow <= 0, `vi/editor/${tab}: no horizontal overflow (${overflow}px)`);

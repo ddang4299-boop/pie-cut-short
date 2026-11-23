@@ -24,6 +24,7 @@ MAX_KEYFRAMES = 2000
 HEX_COLOR = re.compile(r"^#[0-9A-Fa-f]{6}$")
 # generated audio lives in data/voice_cache; the EDL may only point there (served by the API)
 VOICE_PATH = re.compile(r"^voice_cache/(tts|iso)_[0-9a-f]{32}\.mp3$")
+MUSIC_ID = re.compile(r"^[0-9a-f]{32}$")  # music library track (hash of the file's content)
 VOICE_MODELS = ("eleven_flash_v2_5", "eleven_v3", "eleven_multilingual_v2")
 
 
@@ -164,6 +165,31 @@ class Audio(_Model):
     _path = field_validator("isolated_path")(classmethod(lambda cls, v: _voice_path(v)))
 
 
+class Music(_Model):
+    """Background music from the shared library (data/music/<track_id>.<ext>, see music_service)."""
+
+    enabled: bool = False
+    track_id: str | None = None
+    name: str = Field(default="", max_length=200)  # display name, copied from the library
+    duration: float | None = Field(default=None, ge=0)  # track length (s), copied from the library
+    volume_db: float = Field(default=-20.0, ge=-40, le=6)  # gain before loudness normalization
+    start: float = Field(default=0.0, ge=0)  # clip time the music starts
+    offset: float = Field(default=0.0, ge=0)  # track time played at `start`
+    fade_in: float = Field(default=0.5, ge=0, le=10)
+    fade_out: float = Field(default=1.5, ge=0, le=10)
+    loop: bool = True
+    duck_db: float = Field(default=-10.0, ge=-40, le=0)  # extra gain while the voiceover plays
+
+    @field_validator("track_id")
+    @classmethod
+    def _track(cls, v: str | None) -> str | None:
+        if v in (None, ""):
+            return None
+        if not MUSIC_ID.match(v):
+            raise ValueError("unknown music track id")
+        return v
+
+
 class Output(_Model):
     w: int = Field(default=1080, ge=240, le=4096)
     h: int = Field(default=1920, ge=240, le=4096)
@@ -181,6 +207,7 @@ class EDL(_Model):
     progress_bar: ProgressBar = Field(default_factory=ProgressBar)
     voiceover: Voiceover = Field(default_factory=Voiceover)
     audio: Audio = Field(default_factory=Audio)
+    music: Music = Field(default_factory=Music)
     platform: Literal["youtube_shorts", "tiktok", "reels"] = "youtube_shorts"
     output: Output = Field(default_factory=Output)
     status: Literal["draft", "review", "approved", "rendered"] = "draft"

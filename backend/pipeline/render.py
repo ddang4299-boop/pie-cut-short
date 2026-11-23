@@ -223,6 +223,7 @@ class RenderInput:
     isolated: tuple[Path, float] | None = None
     voiceover: Path | None = None
     vo_duration: float | None = None
+    music: tuple[Path, float] | None = None  # (library track, its duration)
     ffmpeg: str = "ffmpeg"
     ffprobe: str = "ffprobe"
     data_dir: Path | None = None
@@ -301,12 +302,13 @@ def composition_props(edl: dict[str, Any], inp: RenderInput, fps: float) -> dict
 # --------------------------------------------------------------------------
 # audio
 # --------------------------------------------------------------------------
-def render_audio(inp: RenderInput, hooks: Hooks, *, include_voiceover: bool = True, name: str = "mix") -> Path:
+def render_audio(inp: RenderInput, hooks: Hooks, *, include_voiceover: bool = True, include_music: bool = True,
+                 name: str = "mix") -> Path:
     """Mixed + loudness-normalized WAV of the clip (`name`.wav in the work dir)."""
     plan = audio_mix.build_plan(
         inp.edl, media=inp.media if inp.has_audio else None, media_offset=inp.media_offset,
         isolated=inp.isolated, voiceover=inp.voiceover, vo_duration=inp.vo_duration,
-        include_voiceover=include_voiceover)
+        include_voiceover=include_voiceover, music=inp.music, include_music=include_music)
     raw = inp.work_dir / f"{name}_raw.wav"
     out = inp.work_dir / f"{name}.wav"
     audio_mix.render_mix(plan, raw, ffmpeg=inp.ffmpeg, log=hooks.log, on_process=hooks.on_process)

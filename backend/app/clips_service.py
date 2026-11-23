@@ -70,6 +70,7 @@ def clip_out(clip: Clip, *, full: bool = True) -> dict[str, Any]:
 
     edl = dict(clip.edl or {})
     edl["status"] = clip.status
+    edl.setdefault("music", edl_mod.Music().model_dump())  # clips saved before background music existed
     work = {**_empty_work(), **(clip.work or {})}
     busy = any(work[s]["state"] in ("queued", "running") for s in WORK_STEPS)
     out: dict[str, Any] = {

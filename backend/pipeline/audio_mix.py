@@ -1,5 +1,5 @@
 """Audio for a rendered clip: cut the original audio to the EDL segments, apply volume, duck it
-under the voiceover, mix, and loudness-normalize (two-pass loudnorm, -14 LUFS by default).
+under the voiceover, add background music, mix, and loudness-normalize (two-pass loudnorm, -14 LUFS by default).
 
 `build_plan()` is pure (ffmpeg inputs + filter graph) so it can be unit tested; `render_mix()`
 runs it and `normalize()` does the two loudnorm passes.
@@ -37,6 +37,7 @@ class AudioPlan:
     out: str = "aout"
     duration: float = 0.0
     duck: tuple[float, float] | None = None  # clip-time window where the original is ducked
+    music: tuple[float, float] | None = None  # clip-time window where the background music plays
 
     @property
     def filter_complex(self) -> str:
@@ -63,9 +64,26 @@ def voiceover_window(edl: dict[str, Any], vo_duration: float | None) -> tuple[fl
     return (start, end) if end > start + 0.01 else None
 
 
+def music_window(edl: dict[str, Any], track_duration: float | None) -> tuple[float, float] | None:
+    """Clip-time [start, end) the background music plays; None when it is off.
+
+    The track plays from `music.offset`; with `loop` it wraps to 0 at its end (the editor preview
+    uses the same rule: track time = (offset + elapsed) mod duration)."""
+    mu = edl.get("music") or {}
+    if not mu.get("enabled") or not mu.get("track_id") or not track_duration:
+        return None
+    total = clip_duration(edl.get("segments") or [])
+    start = max(0.0, float(mu.get("start", 0.0)))
+    end = total
+    if not mu.get("loop", True):
+        end = min(total, start + max(0.0, track_duration - float(mu.get("offset", 0.0))))
+    return (start, end) if end > start + 0.01 else None
+
+
 def build_plan(edl: dict[str, Any], *, media: Path | None, media_offset: float = 0.0,
                isolated: tuple[Path, float] | None = None, voiceover: Path | None = None,
-               vo_duration: float | None = None, include_voiceover: bool = True) -> AudioPlan:
+               vo_duration: float | None = None, include_voiceover: bool = True,
+               music: tuple[Path, float] | None = None, include_music: bool = True) -> AudioPlan:
     """ffmpeg inputs + filter graph producing [aout]: the clip's audio before loudness normalization.
 
     - media: file with the original audio (None = the source has no audio -> silence), whose time 0
@@ -73,6 +91,8 @@ def build_plan(edl: dict[str, Any], *, media: Path | None, media_offset: float =
     - isolated: (Voice Isolator output, source time it starts at) used instead of `media`.
     - voiceover: generated voiceover file; mixed at `voiceover.start` with ducking when
       `include_voiceover`.
+    - music: (library track, its duration); mixed from `music.start` with fades, looped when
+      `music.loop`, and ducked by `music.duck_db` while the voiceover plays, when `include_music`.
     """
     segments = edl.get("segments") or []
     audio = edl.get("audio") or {}
@@ -106,6 +126,7 @@ def build_plan(edl: dict[str, Any], *, media: Path | None, media_offset: float =
         plan.duck = window
     plan.graph.append(chain + "[base]")
 
+    layers = ["[base]"]
     if window:
         idx = len(plan.inputs)
         plan.inputs.append(["-i", str(voiceover)])
@@ -113,7 +134,32 @@ def build_plan(edl: dict[str, Any], *, media: Path | None, media_offset: float =
         delay = int(round(window[0] * 1000))
         plan.graph.append(f"[{idx}:a]{_FMT},volume={_f(float(vo.get('volume_db', 0.0)))}dB,"
                           f"atrim=duration={_f(window[1] - window[0])},adelay={delay}:all=1[vo]")
-        plan.graph.append("[base][vo]amix=inputs=2:duration=first:normalize=0:dropout_transition=0[mixed]")
+        layers.append("[vo]")
+
+    mwin = music_window(edl, music[1]) if include_music and music else None
+    if mwin and music:
+        mu = edl["music"]
+        idx = len(plan.inputs)
+        plan.inputs.append((["-stream_loop", "-1"] if mu.get("loop", True) else []) + ["-i", str(music[0])])
+        length = mwin[1] - mwin[0]
+        chain = (f"[{idx}:a]{_FMT},atrim=start={_f(float(mu.get('offset', 0.0)))}:duration={_f(length)},"
+                 f"asetpts=PTS-STARTPTS,volume={_f(float(mu.get('volume_db', -20.0)))}dB")
+        fade_in = min(float(mu.get("fade_in", 0.0)), length / 2)
+        fade_out = min(float(mu.get("fade_out", 0.0)), length / 2)
+        if fade_in > 0.01:
+            chain += f",afade=t=in:st=0:d={_f(fade_in)}"
+        if fade_out > 0.01:
+            chain += f",afade=t=out:st={_f(length - fade_out)}:d={_f(fade_out)}"
+        chain += f",adelay={int(round(mwin[0] * 1000))}:all=1"
+        if window:  # same window as the original's ducking; t is clip time after adelay
+            chain += (f",volume='if(between(t,{_f(window[0])},{_f(window[1])}),"
+                      f"{_gain(float(mu.get('duck_db', -10.0))):.5f},1)':eval=frame")
+        plan.graph.append(chain + "[mus]")
+        plan.music = mwin
+        layers.append("[mus]")
+
+    if len(layers) > 1:
+        plan.graph.append(f"{''.join(layers)}amix=inputs={len(layers)}:duration=first:normalize=0:dropout_transition=0[mixed]")
         last = "[mixed]"
     else:
         last = "[base]"
@@ -121,19 +167,19 @@ def build_plan(edl: dict[str, Any], *, media: Path | None, media_offset: float =
     return plan
 
 
-def plan_command(plan: AudioPlan, out: Path, ffmpeg: str = "ffmpeg") -> list[str]:
+def plan_command(plan: AudioPlan, out: Path, ffmpeg: str = "ffmpeg", codec: str = "pcm_f32le") -> list[str]:
     cmd = [ffmpeg, "-y", "-nostdin", "-v", "error", "-nostats", "-progress", "pipe:1"]
     for args in plan.inputs:
         cmd += args
     cmd += ["-filter_complex", plan.filter_complex, "-map", f"[{plan.out}]",
-            "-ar", str(SAMPLE_RATE), "-ac", "2", "-c:a", "pcm_f32le", str(out)]
+            "-ar", str(SAMPLE_RATE), "-ac", "2", "-c:a", codec, str(out)]
     return cmd
 
 
 def render_mix(plan: AudioPlan, out: Path, *, ffmpeg: str = "ffmpeg", log: LogFn | None = None,
-               on_process: ProcessFn | None = None) -> Path:
+               on_process: ProcessFn | None = None, codec: str = "pcm_f32le") -> Path:
     out.parent.mkdir(parents=True, exist_ok=True)
-    run_ffmpeg(plan_command(plan, out, ffmpeg), duration=plan.duration, log=log, on_process=on_process)
+    run_ffmpeg(plan_command(plan, out, ffmpeg, codec), duration=plan.duration, log=log, on_process=on_process)
     return out
 
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, type RefObject } from "react";
 
-import { voiceAudioUrl, type Edl } from "../../lib/api";
-import { toClipTime } from "../../lib/edl";
+import { DEFAULT_MUSIC, musicUrl, voiceAudioUrl, type Edl, type EdlMusic } from "../../lib/api";
+import { clipDuration, toClipTime } from "../../lib/edl";
 
 const gain = (db: number) => Math.min(1, Math.max(0, Math.pow(10, db / 20)));
 
@@ -21,22 +21,45 @@ function follow(el: HTMLAudioElement, want: number, playing: boolean) {
 }
 
 /**
+ * Where the background music is at clip time `clipT` (same rules as the render's audio_mix):
+ * it starts at `start`, plays the track from `offset`, wraps to 0 at the track's end when looping
+ * (otherwise stops), and fades in/out linearly (fades capped at half the music's length).
+ */
+export function musicAt(m: EdlMusic, trackDuration: number, total: number, clipT: number): { trackT: number; fade: number } | null {
+  if (!m.enabled || !m.track_id || trackDuration <= 0) return null;
+  const end = m.loop ? total : Math.min(total, m.start + Math.max(0, trackDuration - m.offset));
+  const len = end - m.start;
+  const elapsed = clipT - m.start;
+  if (len <= 0.01 || elapsed < 0 || clipT >= end) return null;
+  const trackT = m.loop ? (m.offset + elapsed) % trackDuration : m.offset + elapsed;
+  const fadeIn = Math.min(m.fade_in, len / 2);
+  const fadeOut = Math.min(m.fade_out, len / 2);
+  let fade = 1;
+  if (fadeIn > 0.01 && elapsed < fadeIn) fade = elapsed / fadeIn;
+  if (fadeOut > 0.01 && elapsed > len - fadeOut) fade = Math.min(fade, (len - elapsed) / fadeOut);
+  return { trackT, fade: Math.max(0, Math.min(1, fade)) };
+}
+
+/**
  * Preview audio for the Clip Editor, driven by the single editor <video>:
  * - the voiceover plays from `voiceover.start` (clip time) and ducks the original by `duck_db`;
  * - with Voice Isolator on, the cleaned voice (source time from `isolated_start`) replaces the
  *   video's own audio;
  * - the original's volume follows `audio.volume_db` (the render applies the same gains, then
- *   loudness normalization).
+ *   loudness normalization);
+ * - background music follows `musicAt()`, ducked by `music.duck_db` while the voiceover plays.
  */
 export function ClipAudio({ videoRef, edl }: { videoRef: RefObject<HTMLVideoElement | null>; edl: Edl }) {
   const voice = useRef<HTMLAudioElement>(null);
   const iso = useRef<HTMLAudioElement>(null);
+  const music = useRef<HTMLAudioElement>(null);
   const state = useRef<HTMLDivElement>(null);
   const edlRef = useRef(edl);
   edlRef.current = edl;
 
   const voiceSrc = edl.voiceover.enabled ? voiceAudioUrl(edl.voiceover.audio_path) : null;
   const isoSrc = edl.audio.isolate_voice ? voiceAudioUrl(edl.audio.isolated_path) : null;
+  const musicSrc = edl.music?.enabled ? musicUrl(edl.music.track_id) : null;
 
   useEffect(() => {
     let raf = 0;
@@ -72,12 +95,24 @@ export function ClipAudio({ videoRef, edl }: { videoRef: RefObject<HTMLVideoElem
       v.muted = isoOn;
       v.volume = original;
 
+      // background music
+      const mu = e.music ?? DEFAULT_MUSIC;
+      const mEl = music.current;
+      const mDur = mu.duration ?? (mEl && Number.isFinite(mEl.duration) ? mEl.duration : 0);
+      const at = mEl && mEl.src && clipT !== null ? musicAt(mu, mDur, clipDuration(e.segments), clipT) : null;
+      if (mEl) {
+        if (at) follow(mEl, at.trackT, playing);
+        else if (!mEl.paused) mEl.pause();
+        mEl.volume = at ? gain(mu.volume_db + (voOn ? mu.duck_db : 0)) * at.fade : 0;
+      }
+
       const el = state.current;
       if (el) {
         // read by the smoke test
         el.dataset.voice = voOn ? "on" : "off";
         el.dataset.isolated = isoOn ? "on" : "off";
         el.dataset.volume = original.toFixed(3);
+        el.dataset.music = at ? "on" : "off";
       }
     };
     raf = requestAnimationFrame(loop);
@@ -85,6 +120,7 @@ export function ClipAudio({ videoRef, edl }: { videoRef: RefObject<HTMLVideoElem
       cancelAnimationFrame(raf);
       voice.current?.pause();
       iso.current?.pause();
+      music.current?.pause();
     };
   }, [videoRef]);
 
@@ -92,6 +128,7 @@ export function ClipAudio({ videoRef, edl }: { videoRef: RefObject<HTMLVideoElem
     <div ref={state} hidden data-testid="clip-audio">
       <audio ref={voice} src={voiceSrc ?? undefined} preload="auto" data-testid="voiceover-audio" />
       <audio ref={iso} src={isoSrc ?? undefined} preload="auto" />
+      <audio ref={music} src={musicSrc ?? undefined} preload="auto" data-testid="music-audio" />
     </div>
   );
 }
