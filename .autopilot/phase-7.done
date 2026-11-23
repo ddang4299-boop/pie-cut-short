@@ -1,0 +1,5 @@
+PARTIAL: Phase 7 done; the render speed target (45 s clip <= 90 s) is missed on this laptop without NVENC (Remotion about 2.7x the clip length, 4.4x with the blur fit), see BLOCKED.md.
+Polish: batch approve/reject with channel presets, batch render, full Settings (AI, Whisper model/device, render, platform presets, channels, ElevenLabs, cache cleanup), job logs + retry, page error boundary, tooltip/layout fixes, EN+VI review.
+Speed: batched faster-whisper on CUDA (30-min video projected 1m35s); scripts/e2e_sample.py acceptance report: 14 pass, 1 warn (render time), 0 fail.
+Checks: pytest 248/248, vitest 53/53, npm run build ok, locale parity ok (770 keys), UI smoke EN+VI ok.
+Commits: 834b99c d064453 70a8660 943d261 cef09fe.
