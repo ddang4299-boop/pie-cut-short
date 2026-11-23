@@ -323,6 +323,7 @@ async function editorChecks(context, moment) {
   if (!safe) await page.getByTestId("toggle-safe-zones").click();
 
   await captionChecks(page, clipId);
+  await voiceChecks(context, page, clipId);
 
   // Vietnamese layout + every tab
   await page.getByTestId("lang-vi").click();
@@ -330,7 +331,7 @@ async function editorChecks(context, moment) {
     await page.getByTestId(`tab-${tab}`).click();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     check(overflow <= 0, `vi/editor/${tab}: no horizontal overflow (${overflow}px)`);
-    if (tab === "captions" || tab === "hook" || tab === "export") await page.screenshot({ path: shot(`vi-editor-${tab}.png`) });
+    if (tab !== "framing") await page.screenshot({ path: shot(`vi-editor-${tab}.png`) });
   }
   await page.getByTestId("tab-framing").click();
   await page.screenshot({ path: shot("vi-editor.png") });
@@ -425,6 +426,113 @@ async function captionChecks(page, clipId) {
   check(hook.includes("Đừng bỏ lỡ điều này"), `hook text shows on the preview at 0s (got "${hook}")`);
   check((await page.getByTestId("guide-hook").count()) === 1, "hook tab shows the hook position guide");
   await page.screenshot({ path: shot("en-editor-hook.png") });
+}
+
+/**
+ * Voiceover (Phase 5), only with the backend in mock mode (ELEVENLABS_MOCK=1: local test tones,
+ * no network, no credits): the confirmation shows characters + credits, the voiceover plays in the
+ * preview over the ducked original, regenerating the same script is free and makes no API call.
+ */
+async function voiceChecks(context, page, clipId) {
+  const api = (path, init) => fetch(`${BASE}/api${path}`, init).then((r) => r.json());
+  const status = await api("/voice/status");
+  if (!status.mock) {
+    console.log("SKIP  voice checks (start the backend with ELEVENLABS_MOCK=1)");
+    return;
+  }
+  const original = (await api(`/clips/${clipId}`)).edl;
+  restore = { id: clipId, edl: { ...(restore?.edl ?? {}), voiceover: original.voiceover, audio: original.audio } };
+  const used = async () => (await api("/voice/status?refresh=true")).subscription.character_count;
+
+  await page.getByTestId("tab-voice").click();
+  await page.waitForSelector('[data-testid="voice-status"][data-mock="1"]', { timeout: 10_000 }).catch(() => {});
+  check((await page.getByTestId("voice-status").count()) === 1, "voice tab shows the ElevenLabs status (mock mode)");
+  await page.waitForFunction(() => document.querySelectorAll('[data-testid="voice-select"] option').length >= 2, null, { timeout: 10_000 }).catch(() => {});
+  await page.getByTestId("voice-select").selectOption("mock_vi_linh");
+
+  const script = `Xin chào, đây là bài thử số ${Date.now() % 100000}`;
+  await page.getByTestId("voice-script").fill(script);
+  await page.waitForFunction(() => document.querySelector('[data-testid="voice-estimate"]')?.dataset.credits > 0, null, { timeout: 5000 }).catch(() => {});
+  const credits = Number(await page.getByTestId("voice-estimate").getAttribute("data-credits"));
+  check(credits === Math.ceil(script.length * 0.5), `estimate shows the credits before any call (${credits} for ${script.length} chars)`);
+
+  const before = await used();
+  await page.getByTestId("voice-generate").click();
+  await page.waitForSelector('[data-testid="confirm-dialog"]', { timeout: 5000 }).catch(() => {});
+  const body = await page.getByTestId("credit-body").innerText().catch(() => "");
+  check(body.includes(String(script.length)) && body.includes(String(credits)), `generating asks first with characters + credits ("${body}")`);
+  check((await used()) === before, "nothing is spent before confirming");
+  await page.getByTestId("confirm-button").click();
+  await page.waitForSelector('[data-testid="voiceover-block"]', { timeout: 20_000 }).catch(() => {});
+  const vo = (await api(`/clips/${clipId}`)).edl.voiceover;
+  check(!!vo.audio_path && vo.enabled && vo.duration > 0.5, `voiceover generated and placed on the timeline (${vo.audio_path}, ${vo.duration}s)`);
+  check((await used()) === before + credits, "the mock quota counts the confirmed credits");
+
+  // plays over the ducked original
+  await page.getByTestId("voice-play").click();
+  await page.waitForTimeout(900);
+  const audio = await page.evaluate(() => {
+    const el = document.querySelector('[data-testid="clip-audio"]');
+    const a = document.querySelector('[data-testid="voiceover-audio"]');
+    const v = document.querySelector('[data-testid="editor-video"]');
+    return { state: el?.dataset.voice, volume: Number(el?.dataset.volume), playing: a && !a.paused, at: a?.currentTime ?? 0, video: v?.volume };
+  });
+  const ducked = Math.pow(10, (original.audio.volume_db + vo.duck_db) / 20);
+  check(audio.state === "on" && audio.playing && audio.at > 0.2, `voiceover plays in the preview (t=${audio.at.toFixed(2)}s)`);
+  check(Math.abs(audio.video - Math.min(1, ducked)) < 0.01, `original audio is ducked by ${vo.duck_db} dB while it plays (volume ${audio.video?.toFixed(3)})`);
+  await page.getByTestId("editor-play").click();
+
+  // the same script again: cached, free, no confirmation, no API call
+  await page.getByTestId("voice-script").fill(script + "!");
+  await page.waitForTimeout(400);
+  check((await page.getByTestId("voice-stale").count()) === 1, "editing the script marks the voiceover as outdated");
+  await page.getByTestId("voice-script").fill(script);
+  await page.waitForSelector('[data-testid="voice-estimate"][data-cached="1"]', { timeout: 5000 }).catch(() => {});
+  check((await page.getByTestId("voice-estimate").getAttribute("data-credits")) === "0", "the same script shows as cached (0 credits)");
+  const spent = await used();
+  await page.getByTestId("voice-generate").click();
+  await page.waitForTimeout(800);
+  check((await page.getByTestId("confirm-dialog").count()) === 0 && (await used()) === spent, "regenerating the same script costs nothing and asks nothing");
+
+  // drag the block on the timeline + undo
+  const block = await page.getByTestId("voiceover-block").boundingBox();
+  await page.mouse.move(block.x + 6, block.y + block.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(block.x + 66, block.y + block.height / 2, { steps: 6 });
+  await page.mouse.up();
+  const moved = Number(await page.getByTestId("voiceover-block").getAttribute("data-start"));
+  check(moved > vo.start + 0.2, `dragging the voiceover block moves its start (${vo.start} -> ${moved})`);
+  await page.keyboard.press("Control+z");
+  check(Number(await page.getByTestId("voiceover-block").getAttribute("data-start")) === vo.start, "Ctrl+Z undoes the move");
+  await page.screenshot({ path: shot("en-editor-voice.png") });
+
+  // Voice Isolator: asks first, then the preview uses the clean voice
+  await page.getByTestId("tab-audio").click();
+  await page.waitForFunction(() => /\d/.test(document.querySelector('[data-testid="isolate-estimate"]')?.textContent ?? ""), null, { timeout: 5000 }).catch(() => {});
+  const isoEst = await api(`/clips/${clipId}/isolate/estimate`);
+  await page.getByTestId("isolate-toggle").click();
+  if (isoEst.cached) {
+    await page.waitForTimeout(800);
+    check((await page.getByTestId("confirm-dialog").count()) === 0, "Voice Isolator reuses the cached result without asking");
+  } else {
+    await page.waitForSelector('[data-testid="confirm-dialog"]', { timeout: 5000 }).catch(() => {});
+    check((await page.getByTestId("confirm-dialog").count()) === 1, `Voice Isolator asks before spending credits (${isoEst.credits})`);
+    await page.getByTestId("confirm-button").click();
+  }
+  await page.waitForFunction(() => document.querySelector('[data-testid="isolate-toggle"]')?.checked, null, { timeout: 20_000 }).catch(() => {});
+  const iso = (await api(`/clips/${clipId}`)).edl.audio;
+  check(iso.isolate_voice && !!iso.isolated_path, `isolated voice saved in the EDL (${iso.isolated_path})`);
+  await page.getByTestId("isolate-toggle").click();
+  await page.waitForTimeout(800);
+  check((await api(`/clips/${clipId}`)).edl.audio.isolate_voice === false, "turning the isolator off is free and saved");
+
+  // Settings shows the key status
+  const settings = await context.newPage();
+  await settings.goto(`${BASE}/settings`);
+  await settings.waitForSelector('[data-testid="voice-settings"]', { timeout: 10_000 }).catch(() => {});
+  const keyText = await settings.getByTestId("voice-key-status").innerText().catch(() => "");
+  check(keyText.includes(en["pages.settings.voice_key_mock"]), `Settings shows the ElevenLabs key status ("${keyText}")`);
+  await settings.close();
 }
 
 const formatTc = (t) => {

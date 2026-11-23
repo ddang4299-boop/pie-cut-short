@@ -3,8 +3,9 @@ import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { PageHeader } from "../components/states";
 import { SystemStatus } from "../components/SystemStatus";
+import { VoiceSettingsPanel } from "../components/VoiceSettingsPanel";
 
-/** Settings (Phase 0: UI language + system status; the rest arrives in Phase 7). */
+/** Settings: UI language, ElevenLabs, system status (the rest arrives in Phase 7). */
 export default function Settings() {
   const { t } = useTranslation();
   return (
@@ -16,6 +17,8 @@ export default function Settings() {
         <p className="mt-1 mb-4 text-sm text-muted">{t("pages.settings.language_hint")}</p>
         <LanguageSwitcher variant="full" />
       </section>
+
+      <VoiceSettingsPanel />
 
       <div>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">{t("pages.settings.system_title")}</h2>

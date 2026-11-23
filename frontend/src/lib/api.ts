@@ -332,7 +332,17 @@ export interface AppSettings {
   clip_min: number;
   clip_max: number;
   moments_wanted: [number, number];
-  env: { llm_provider: string; anthropic_configured: boolean; openai_configured: boolean; ollama_host: string; ollama_model: string };
+  voice_default_id: string;
+  voice_model: VoiceModel;
+  env: {
+    llm_provider: string;
+    anthropic_configured: boolean;
+    openai_configured: boolean;
+    ollama_host: string;
+    ollama_model: string;
+    elevenlabs_configured: boolean;
+    elevenlabs_mock: boolean;
+  };
   effective_llm_provider: LlmProvider;
 }
 
@@ -370,8 +380,19 @@ export interface Edl {
   captions: { enabled: boolean; style: CaptionStyle; position_y: number; words_per_page: number; font_size: number; words: CaptionWord[] };
   hook_text: { enabled: boolean; text: string; start: number; end: number; position_y: number };
   progress_bar: { enabled: boolean; color: string };
-  voiceover: { enabled: boolean; script: string; voice_id: string; audio_path: string | null; start: number; duck_db: number };
-  audio: { normalize_lufs: number; isolate_voice: boolean; volume_db: number };
+  voiceover: {
+    enabled: boolean;
+    script: string;
+    voice_id: string;
+    model_id: VoiceModel;
+    settings: VoiceSettings;
+    audio_path: string | null;
+    duration: number | null;
+    start: number;
+    volume_db: number;
+    duck_db: number;
+  };
+  audio: { normalize_lufs: number; isolate_voice: boolean; volume_db: number; isolated_path: string | null; isolated_start: number };
   platform: Platform;
   output: { w: number; h: number; fps: number };
   status: ClipStatus;
@@ -406,3 +427,75 @@ export const patchClip = (id: string, body: { edl?: Partial<Pick<Edl, EdlSection
 export const clipSrtUrl = (id: string) => apiUrl(`/clips/${id}/captions.srt`);
 export const getClipSrt = (id: string) => fetch(clipSrtUrl(id)).then((r) => (r.ok ? r.text() : Promise.reject(new Error(String(r.status)))));
 export const reframeClip = (id: string, mode?: CropMode) => apiSend<Clip>("POST", `/clips/${id}/reframe`, mode ? { mode } : {});
+
+// --- Voice / ElevenLabs (Phase 5) ---------------------------------------------
+
+export const VOICE_MODELS = ["eleven_flash_v2_5", "eleven_v3", "eleven_multilingual_v2"] as const;
+export type VoiceModel = (typeof VOICE_MODELS)[number];
+export interface VoiceSettings {
+  stability: number;
+  similarity_boost: number;
+  style: number;
+  speed: number;
+}
+export interface VoiceModelInfo {
+  id: VoiceModel;
+  credits_per_char: number;
+  max_chars: number;
+  vietnamese: boolean;
+}
+export interface VoiceStatus {
+  configured: boolean;
+  mock: boolean;
+  models: VoiceModelInfo[];
+  default_model: VoiceModel;
+  default_voice_id: string;
+  isolation_credits_per_minute: number;
+  subscription: { tier: string | null; character_count: number | null; character_limit: number | null; next_reset_unix: number | null } | null;
+  error: string | null;
+}
+export interface Voice {
+  voice_id: string;
+  name: string;
+  category: string | null;
+  labels: Record<string, string>;
+  languages: string[];
+  preview_url: string | null;
+}
+export interface VoiceEstimate {
+  characters: number;
+  credits: number;
+  credits_to_spend: number;
+  max_chars: number;
+  model_id: VoiceModel;
+  cached: boolean;
+  audio_path: string | null;
+  over_limit: boolean;
+}
+export interface VoiceRequest {
+  script: string;
+  voice_id: string;
+  model_id: VoiceModel;
+  settings: VoiceSettings;
+}
+export interface IsolationEstimate {
+  seconds: number;
+  credits: number;
+  credits_to_spend: number;
+  cached: boolean;
+}
+
+export const getVoiceStatus = (refresh = false) => apiGet<VoiceStatus>(`/voice/status${refresh ? "?refresh=true" : ""}`);
+export const listVoices = (refresh = false) => apiGet<Voice[]>(`/voice/voices${refresh ? "?refresh=true" : ""}`);
+export const estimateVoiceover = (clipId: string, body: VoiceRequest) => apiSend<VoiceEstimate>("POST", `/clips/${clipId}/voiceover/estimate`, body);
+export const generateVoiceover = (clipId: string, body: VoiceRequest & { confirm: boolean }) =>
+  apiSend<{ clip: Clip; cached: boolean; credits: number; characters: number }>("POST", `/clips/${clipId}/voiceover`, body);
+export const suggestVoiceover = (clipId: string) => apiSend<{ script: string; source: string }>("POST", `/clips/${clipId}/voiceover/suggest`);
+export const estimateIsolation = (clipId: string) => apiGet<IsolationEstimate>(`/clips/${clipId}/isolate/estimate`);
+export const isolateVoice = (clipId: string, confirm: boolean) =>
+  apiSend<{ clip: Clip; cached: boolean; credits: number }>("POST", `/clips/${clipId}/isolate`, { confirm });
+/** URL of a generated audio file (EDL path "voice_cache/<name>.mp3"). */
+export const voiceAudioUrl = (path: string | null) => (path ? apiUrl(`/voice/audio/${path.split("/").pop()}`) : null);
+/** Voice preview URLs are absolute (ElevenLabs CDN) or backend paths (mock mode). */
+export const voicePreviewUrl = (url: string | null) => (!url ? null : url.startsWith("/") ? apiUrl(url) : url);
+

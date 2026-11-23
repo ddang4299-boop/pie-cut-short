@@ -328,7 +328,17 @@ export function FramingTab({
   );
 }
 
-export function AudioTab({ edl, onAudio, onVoiceover }: { edl: Edl; onAudio: (a: Edl["audio"]) => void; onVoiceover: (v: Edl["voiceover"]) => void }) {
+export function AudioTab({
+  edl,
+  onAudio,
+  onVoiceover,
+  isolate,
+}: {
+  edl: Edl;
+  onAudio: (a: Edl["audio"]) => void;
+  onVoiceover: (v: Edl["voiceover"]) => void;
+  isolate: ReactNode;
+}) {
   const { t } = useTranslation();
   const a = edl.audio;
   return (
@@ -353,12 +363,14 @@ export function AudioTab({ edl, onAudio, onVoiceover }: { edl: Edl; onAudio: (a:
         <Row label={t("pages.editor.target_lufs")} hint={t("pages.editor.target_lufs_hint")}>
           <NumberField value={a.normalize_lufs} min={-30} max={-6} step={0.5} digits={1} label={t("pages.editor.target_lufs")} onCommit={(v) => onAudio({ ...a, normalize_lufs: v })} testId="lufs" />
         </Row>
-        <Row label={t("pages.editor.isolate")} hint={t("pages.editor.isolate_hint")}>
-          <span className="flex items-center gap-2">
-            <input type="checkbox" checked={a.isolate_voice} disabled aria-label={t("pages.editor.isolate")} className="accent-[var(--color-accent)]" />
-            <span className="truncate text-xs text-muted">{t("pages.editor.needs_elevenlabs")}</span>
+        {/* not a <label>: the control opens a confirmation dialog */}
+        <div className="mb-2 grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] items-center gap-3 text-sm">
+          <span className="min-w-0 text-muted" title={t("pages.editor.isolate_hint")}>
+            {t("pages.editor.isolate")}
           </span>
-        </Row>
+          <span className="min-w-0">{isolate}</span>
+        </div>
+        {a.isolate_voice && <p className="text-xs text-muted">{t("pages.editor.isolate_on_note")}</p>}
       </Section>
       <Section title={t("pages.editor.ducking")}>
         <Row label={t("pages.editor.duck_db")} hint={t("pages.editor.duck_hint")}>
@@ -376,18 +388,8 @@ export function AudioTab({ edl, onAudio, onVoiceover }: { edl: Edl; onAudio: (a:
             <span className="w-14 text-right font-mono text-xs">{t("pages.editor.db", { value: edl.voiceover.duck_db })}</span>
           </span>
         </Row>
-        <p className="text-xs text-muted">{t("pages.editor.duck_note")}</p>
+        <p className="text-xs text-muted">{edl.voiceover.audio_path ? t("pages.editor.duck_active") : t("pages.editor.duck_note")}</p>
       </Section>
-    </div>
-  );
-}
-
-export function PlaceholderTab({ tab }: { tab: InspectorTab }) {
-  const { t } = useTranslation();
-  return (
-    <div className="p-6 text-center text-sm text-muted" data-testid={`placeholder-${tab}`}>
-      <p className="font-medium text-fg">{t(`pages.editor.tab.${tab}`)}</p>
-      <p className="mt-1">{t(`pages.editor.later.${tab}`)}</p>
     </div>
   );
 }

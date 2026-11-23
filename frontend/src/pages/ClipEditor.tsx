@@ -18,9 +18,11 @@ import { useNavigate, useSearchParams } from "react-router";
 
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EditorTimeline } from "../components/editor/EditorTimeline";
-import { AudioTab, FramingTab, INSPECTOR_TABS, PlaceholderTab, type InspectorTab } from "../components/editor/Inspector";
+import { ClipAudio } from "../components/editor/ClipAudio";
+import { AudioTab, FramingTab, INSPECTOR_TABS, type InspectorTab } from "../components/editor/Inspector";
 import { PreviewCanvas, type Guide } from "../components/editor/PreviewCanvas";
 import { CaptionsTab, ExportTab, HookTab } from "../components/editor/TextTabs";
+import { IsolateToggle, VoiceTab } from "../components/editor/VoiceTab";
 import { SourceView, type Phase, type SplitPanel } from "../components/editor/SourceView";
 import { EmptyState, ErrorState, Skeleton } from "../components/states";
 import { useToast } from "../components/Toasts";
@@ -490,12 +492,6 @@ function EditorWorkspace({ clipId }: { clipId: string }) {
     };
   }, [onVideoReady, source?.proxy_url, edl === null]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // preview volume follows the audio tab (the render applies gain + loudness normalization)
-  useEffect(() => {
-    const v = video.current;
-    if (v && edl) v.volume = Math.min(1, Math.pow(10, edl.audio.volume_db / 20));
-  }, [edl?.audio.volume_db]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const togglePlay = useCallback(() => {
     const v = video.current;
     const cur = edlRef.current;
@@ -599,6 +595,49 @@ function EditorWorkspace({ clipId }: { clipId: string }) {
       if (phase === "end") endGesture();
     },
     [apply, beginGesture, endGesture],
+  );
+
+  /** Drag the voiceover block on the timeline (one undo step per drag). */
+  const onVoiceStart = useCallback(
+    (start: number, phase: "start" | "move" | "end") => {
+      const cur = edlRef.current;
+      if (!cur) return;
+      if (phase === "start") return beginGesture();
+      if (phase === "move") apply({ ...cur, voiceover: { ...cur.voiceover, start } }, "live");
+      else endGesture();
+    },
+    [apply, beginGesture, endGesture],
+  );
+
+  /** The server changed some sections (voiceover generated, voice isolated): adopt them as one undo step.
+   *  Callers flush() first, so local edits are already saved. */
+  const adoptServer = useCallback((fresh: Clip, keys: ("voiceover" | "audio")[]) => {
+    const cur = edlRef.current;
+    const base = saved.current;
+    setClip(fresh);
+    if (!cur || !base) return;
+    const next = { ...cur };
+    const nextBase = { ...base };
+    for (const k of keys) {
+      (next as Record<string, unknown>)[k] = fresh.edl[k];
+      (nextBase as Record<string, unknown>)[k] = fresh.edl[k];
+    }
+    saved.current = nextBase;
+    if (same(next, cur)) return;
+    pushPast(cur);
+    history.current.lastKey = null;
+    edlRef.current = next;
+    setEdlState(next);
+    rerender();
+  }, []);
+
+  const playFrom = useCallback(
+    (clipT: number) => {
+      seek(clipT);
+      const v = video.current;
+      if (v) void v.play().catch(() => undefined);
+    },
+    [seek],
   );
 
   const recompute = useCallback(async () => {
@@ -890,7 +929,25 @@ function EditorWorkspace({ clipId }: { clipId: string }) {
                 onDraw={setDrawTarget}
               />
             ) : tab === "audio" ? (
-              <AudioTab edl={edl} onAudio={(a) => setSection("audio", a, "record", "audio")} onVoiceover={(v) => setSection("voiceover", v, "record", "duck")} />
+              <AudioTab
+                edl={edl}
+                onAudio={(a) => setSection("audio", a, "record", "audio")}
+                onVoiceover={(v) => setSection("voiceover", v, "record", "duck")}
+                isolate={<IsolateToggle clip={clip} edl={edl} onAudio={(a) => setSection("audio", a)} onBeforeCall={flush} onServerClip={adoptServer} />}
+              />
+            ) : tab === "voice" ? (
+              <VoiceTab
+                clip={clip}
+                edl={edl}
+                clipTime={time}
+                duration={duration}
+                language={source?.language || "en"}
+                onVoiceover={(v, mode, key) => setSection("voiceover", v, mode, key)}
+                onSeek={seek}
+                onPlayFrom={playFrom}
+                onBeforeCall={flush}
+                onServerClip={adoptServer}
+              />
             ) : tab === "captions" ? (
               <CaptionsTab
                 edl={edl}
@@ -904,9 +961,7 @@ function EditorWorkspace({ clipId }: { clipId: string }) {
               <HookTab edl={edl} duration={duration} onHook={(h, mode, key) => setSection("hook_text", h, mode, key)} />
             ) : tab === "export" ? (
               <ExportTab edl={edl} onProgress={(p) => setSection("progress_bar", p)} onPlatform={(p) => setSection("platform", p)} />
-            ) : (
-              <PlaceholderTab tab={tab} />
-            )}
+            ) : null}
           </div>
         </aside>
       </div>
@@ -921,8 +976,11 @@ function EditorWorkspace({ clipId }: { clipId: string }) {
           onSeek={seek}
           onSelectSegment={setSelectedSegment}
           onSelectKeyframe={setSelectedKeyframe}
+          onVoiceStart={onVoiceStart}
         />
       </div>
+
+      <ClipAudio videoRef={video} edl={edl} />
 
       <ConfirmDialog
         open={confirmRecompute}

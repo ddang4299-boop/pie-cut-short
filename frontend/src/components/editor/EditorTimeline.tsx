@@ -30,6 +30,7 @@ export function EditorTimeline({
   onSeek,
   onSelectSegment,
   onSelectKeyframe,
+  onVoiceStart,
 }: {
   edl: Edl;
   time: number;
@@ -39,6 +40,8 @@ export function EditorTimeline({
   onSeek: (clipT: number) => void;
   onSelectSegment: (index: number | null) => void;
   onSelectKeyframe: (index: number | null) => void;
+  /** Drag the voiceover block: live moves, then one "end" (one undo step). */
+  onVoiceStart?: (start: number, phase: "start" | "move" | "end") => void;
 }) {
   const { t } = useTranslation();
   const scroller = useRef<HTMLDivElement>(null);
@@ -53,6 +56,9 @@ export function EditorTimeline({
   const offsets = useMemo(() => segmentOffsets(edl.segments), [edl.segments]);
   const keyframes = useMemo(() => sortKeyframes(edl.crop.keyframes), [edl.crop.keyframes]);
   const scrub = useRef(false);
+  const voDrag = useRef<{ x: number; start: number; moved: boolean } | null>(null);
+  const vo = edl.voiceover;
+  const voDur = vo.duration ?? 0;
 
   useEffect(() => {
     const el = scroller.current;
@@ -198,8 +204,59 @@ export function EditorTimeline({
               </div>
             )}
           </div>
-          {/* voiceover (Phase 5) */}
-          <div className="relative border-t border-line/50" style={{ height: TRACK_H }} />
+          {/* voiceover: drag to move its start */}
+          <div className="relative border-t border-line/50" style={{ height: TRACK_H }} data-testid="track-voiceover">
+            {vo.audio_path && voDur > 0 && (
+              <div
+                role="slider"
+                tabIndex={0}
+                aria-label={t("pages.editor.voice_block")}
+                aria-valuenow={vo.start}
+                aria-valuemin={0}
+                aria-valuemax={duration}
+                data-testid="voiceover-block"
+                data-start={vo.start}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  if (e.button !== 0 || !onVoiceStart) return;
+                  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                  voDrag.current = { x: e.clientX, start: vo.start, moved: false };
+                  onVoiceStart(vo.start, "start");
+                }}
+                onPointerMove={(e) => {
+                  const d = voDrag.current;
+                  if (!d || !onVoiceStart) return;
+                  if (Math.abs(e.clientX - d.x) > 2) d.moved = true;
+                  if (d.moved) onVoiceStart(Math.round(Math.min(Math.max(0, duration - 0.1), Math.max(0, d.start + (e.clientX - d.x) / scale)) * 100) / 100, "move");
+                }}
+                onPointerUp={() => {
+                  const d = voDrag.current;
+                  voDrag.current = null;
+                  if (!d || !onVoiceStart) return;
+                  if (!d.moved) onSeek(vo.start);
+                  onVoiceStart(vo.start, "end");
+                }}
+                onKeyDown={(e) => {
+                  if (!onVoiceStart || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const delta = (e.shiftKey ? 1 : 0.1) * (e.key === "ArrowLeft" ? -1 : 1);
+                  const next = Math.round(Math.max(0, Math.min(duration - 0.1, vo.start + delta)) * 100) / 100;
+                  onVoiceStart(vo.start, "start");
+                  onVoiceStart(next, "move");
+                  onVoiceStart(next, "end");
+                }}
+                className={`absolute top-1.5 bottom-1.5 cursor-ew-resize truncate rounded border select-none px-1.5 text-[10px] leading-[16px] outline-none focus:ring-1 focus:ring-success ${
+                  vo.enabled ? "border-success/70 bg-success/20 text-success" : "border-line bg-white/5 text-muted line-through"
+                }`}
+                style={{ left: x(vo.start), width: Math.max(6, voDur * scale) }}
+                title={`${formatTimecode(vo.start)} – ${formatTimecode(vo.start + voDur)}`}
+                data-content
+              >
+                {vo.script}
+              </div>
+            )}
+          </div>
           {/* audio */}
           <div className="relative border-t border-line/50" style={{ height: TRACK_H }}>
             <canvas ref={wave} className="absolute top-0" style={{ left: x(0), width: duration * scale, height: TRACK_H }} />
