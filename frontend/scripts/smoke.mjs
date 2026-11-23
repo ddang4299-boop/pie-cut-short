@@ -76,7 +76,7 @@ async function libraryFlow() {
   await page.waitForSelector(`${sel} [data-testid="active-job"]`, { timeout: 30_000 }).catch(() => {});
   await page.getByTestId("lang-vi").click();
   await page.screenshot({ path: shot("vi-library-running.png") });
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  const overflow = await page.evaluate(OVERFLOW);
   check(overflow <= 0, `vi/library with a running card: no horizontal overflow (${overflow}px)`);
   await page.getByTestId("jobs-button").click();
   check((await page.getByTestId("job-row").count()) > 0, "jobs drawer lists the running job");
@@ -199,7 +199,7 @@ async function momentsFlow(source) {
   const manualTitle = await page.getByTestId("title-field").inputValue();
   check(manualTitle.length > 10, `the manual moment is titled from the selected text ("${manualTitle}")`);
   await page.getByTestId("lang-vi").click();
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  const overflow = await page.evaluate(OVERFLOW);
   check(overflow <= 0, `vi/moments: no horizontal overflow (${overflow}px)`);
   await page.screenshot({ path: shot("vi-moments-edited.png") });
   await page.getByTestId("lang-en").click();
@@ -329,7 +329,7 @@ async function editorChecks(context, moment) {
   await page.getByTestId("lang-vi").click();
   for (const tab of ["framing", "captions", "hook", "voice", "audio", "export"]) {
     await page.getByTestId(`tab-${tab}`).click();
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    const overflow = await page.evaluate(OVERFLOW);
     check(overflow <= 0, `vi/editor/${tab}: no horizontal overflow (${overflow}px)`);
     if (tab !== "framing") await page.screenshot({ path: shot(`vi-editor-${tab}.png`) });
   }
@@ -541,6 +541,84 @@ const formatTc = (t) => {
   return `${String(m).padStart(2, "0")}:${s.toFixed(2).padStart(5, "0")}`;
 };
 
+// `value` as a whole word (letters/digits around it do not count as a match)
+const wordRe = (value) => new RegExp(`(?<![\\p{L}\\p{N}])${value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\p{L}\\p{N}])`, "u");
+const wordIn = (text, value) => wordRe(value).test(text);
+
+// horizontal overflow of the window and of the page area (<main> scrolls on its own)
+const OVERFLOW = () => {
+  const main = document.querySelector("main");
+  return Math.max(document.documentElement.scrollWidth - window.innerWidth, main ? main.scrollWidth - main.clientWidth : 0);
+};
+
+/**
+ * Phase 7: Settings (channel preset add/rename/delete through the UI, cache panel + confirm then
+ * cancel, VI layout with the channel editor open), Moments multi-select bar.
+ */
+async function phase7Flow(sourceWithMoments) {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: "vi-VN" });
+  const page = await context.newPage();
+  const before = await fetch(`${BASE}/api/settings`).then((r) => r.json());
+  await page.goto(`${BASE}/settings`);
+  await page.getByTestId("lang-vi").click();
+  await page.waitForSelector('[data-testid="settings-ai"]', { timeout: 15_000 });
+  for (const id of ["settings-ai", "settings-transcribe", "settings-render", "settings-presets", "settings-channels", "settings-cache"]) {
+    check(await page.getByTestId(id).isVisible(), `vi/settings: section ${id} visible`);
+  }
+  await page.getByTestId("channel-add").click();
+  await page.waitForSelector('[data-testid="channel-editor"]', { timeout: 10_000 });
+  const name = page.getByTestId("channel-name");
+  await name.fill("Kênh thử nghiệm");
+  await name.press("Enter");
+  await page.getByTestId("channel-style").selectOption("bounce");
+  await page.waitForTimeout(800);
+  const saved = await fetch(`${BASE}/api/settings`).then((r) => r.json());
+  const created = saved.channels.find((c) => !before.channels.some((b) => b.id === c.id));
+  check(created?.name === "Kênh thử nghiệm" && created?.caption_style === "bounce", "channel preset saved from the UI (name + style)");
+  const overflow = await page.evaluate(OVERFLOW);
+  check(overflow <= 0, `vi/settings with channel editor open: no horizontal overflow (${overflow}px)`);
+  await page.getByTestId("settings-channels").screenshot({ path: shot("vi-settings-channels.png") });
+
+  // cache: sizes listed, confirm dialog opens, cancel keeps everything
+  await page.waitForSelector('[data-testid="cache-transcripts"]', { timeout: 15_000 });
+  const cacheText = await page.getByTestId("settings-cache").innerText();
+  check(cacheText.includes(vi["cache.transcripts"]) && cacheText.includes(vi["cache.voice_generated"]), "vi/settings: cache rows translated");
+  if (await page.getByTestId("cache-clear-all").isEnabled()) {
+    await page.getByTestId("cache-clear-all").click();
+    check(await page.getByTestId("confirm-button").isVisible(), "clearing the cache asks for confirmation");
+    await page.keyboard.press("Escape");
+  }
+  await page.getByTestId("settings-cache").screenshot({ path: shot("vi-settings-cache.png") });
+
+  // delete the test channel through the UI
+  const row = page.getByTestId("channel-row").filter({ hasText: "Kênh thử nghiệm" });
+  await row.getByRole("button", { name: vi["pages.settings.channel_delete"] }).click();
+  await page.getByTestId("confirm-button").click();
+  await page.waitForTimeout(800);
+  const after = await fetch(`${BASE}/api/settings`).then((r) => r.json());
+  check(after.channels.length === before.channels.length, "channel preset deleted from the UI");
+
+  // Moments multi-select (no change is saved)
+  if (sourceWithMoments) {
+    await page.goto(`${BASE}/moments`);
+    await page.getByTestId("moments-source-select").selectOption(sourceWithMoments.id);
+    await page.waitForSelector('[data-testid="moment-card"]', { timeout: 20_000 });
+    const boxes = page.getByTestId("moment-check");
+    await boxes.nth(0).check();
+    await boxes.nth(1).check();
+    const bar = await page.getByTestId("batch-bar").innerText();
+    check(bar.includes(vi["pages.moments.batch_selected"].replace("{{count}}", "2")), "vi/moments: batch bar shows 2 selected");
+    check(await page.getByTestId("batch-approve").isVisible() && await page.getByTestId("batch-reject").isVisible(), "batch approve / reject buttons shown");
+    const ov = await page.evaluate(OVERFLOW);
+    check(ov <= 0, `vi/moments with batch bar: no horizontal overflow (${ov}px)`);
+    await page.screenshot({ path: shot("vi-moments-batch.png") });
+    await page.getByTestId("check-all").check();
+    await page.getByTestId("check-all").uncheck();
+    check((await page.getByTestId("batch-approve").count()) === 0, "unchecking all hides the batch buttons");
+  }
+  await context.close();
+}
+
 const browser = await chromium.launch({ channel: CHANNEL, headless: true });
 try {
   // --- 1. Main run: English browser ----------------------------------------
@@ -566,8 +644,10 @@ try {
       // text marked data-content (titles, transcripts) follows the video's language, not the UI's
       texts[lang][name] = await page.evaluate(() =>
         [...document.querySelectorAll("[data-content]")].reduce((text, el) => text.split(el.innerText).join(" "), document.body.innerText));
-      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      const overflow = await page.evaluate(OVERFLOW);
       check(overflow <= 0, `${lang}/${name}: no horizontal overflow (${overflow}px)`);
+      const cutTabs = await page.$$eval('[role="tab"]', (els) => els.filter((e) => e.scrollWidth > e.clientWidth).map((e) => e.innerText));
+      check(cutTabs.length === 0, `${lang}/${name}: no truncated tab labels${cutTabs.length ? ` -> ${cutTabs.join(", ")}` : ""}`);
       await page.waitForTimeout(250); // let nav color transitions finish
       await page.screenshot({ path: shot(`${lang}-${name}.png`) });
     }
@@ -580,8 +660,13 @@ try {
   for (const [lang, otherLocale, other] of [["vi", en, "en"], ["en", vi, "vi"]]) {
     const foreign = onlyIn(otherLocale, lang === "vi" ? vi : en);
     for (const [name, text] of Object.entries(texts[lang])) {
-      const leaked = foreign.filter(({ value }) => text.includes(value));
+      // whole words only, so "Open" does not match inside the brand name "OpenAI"
+      const leaked = foreign.filter(({ value }) => wordIn(text, value));
       check(leaked.length === 0, `${lang}/${name}: no ${other} strings visible${leaked.length ? ` -> ${leaked.map((l) => l.key).join(", ")}` : ""}`);
+      for (const { key, value } of leaked) {
+        const i = text.search(wordRe(value));
+        console.log(`      ${key}: …${JSON.stringify(text.slice(Math.max(0, i - 50), i + value.length + 30))}…`);
+      }
     }
   }
   check(texts.vi.library.includes(vi["pages.library.drop"]), "VI library shows Vietnamese text");
@@ -631,6 +716,9 @@ try {
   const withMoments = sources.find((s) => s.status === "ready" && s.moments.total >= 8);
   if (withMoments) await momentsFlow(withMoments);
   else console.log("SKIP  moments flow (no ready source with ≥ 8 moments: run /find-moments on the sample first)");
+
+  // --- 5b. Phase 7: Settings + batch selection ------------------------------
+  await phase7Flow(withMoments ?? sources.find((s) => s.moments?.total >= 2));
 
   // --- 6. Clip Editor (Phase 3) ---------------------------------------------
   const editable = sources.find((s) => s.status === "ready" && s.moments.total > 0 && s.proxy_url);

@@ -94,7 +94,8 @@
     "start": "Bắt đầu",
     "open": "Mở",
     "more": "Thao tác khác",
-    "loading": "Đang tải…"
+    "loading": "Đang tải…",
+    "page_crashed": "Trang này gặp lỗi không mong muốn. Các phần khác của ứng dụng vẫn hoạt động; hãy thử lại hoặc mở trang khác."
   },
   "pages": {
     "library": {

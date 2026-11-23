@@ -94,7 +94,8 @@
     "start": "Start",
     "open": "Open",
     "more": "More actions",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "page_crashed": "This page hit an unexpected error. The rest of the app still works; retry, or open another page."
   },
   "pages": {
     "library": {

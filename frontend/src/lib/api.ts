@@ -372,8 +372,9 @@ export interface Channel {
   voice_id: string;
 }
 
+/** A new channel with a client-made id (`ch_` + 8 hex, the format the backend keeps). */
 export const newChannel = (name: string): Channel => ({
-  id: "",
+  id: `ch_${Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => b.toString(16).padStart(2, "0")).join("")}`,
   name,
   platform: "youtube_shorts",
   caption_style: "bold",

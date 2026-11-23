@@ -4,6 +4,7 @@ import { Navigate, Route, Routes, useNavigate } from "react-router";
 import { Header } from "./components/Header";
 import { JobsDrawer } from "./components/JobsDrawer";
 import { NAV_ITEMS } from "./components/nav";
+import { PageErrorBoundary } from "./components/PageErrorBoundary";
 import { Sidebar } from "./components/Sidebar";
 import ClipEditor from "./pages/ClipEditor";
 import Export from "./pages/Export";
@@ -22,8 +23,11 @@ export default function App() {
         setJobsOpen(false);
         return;
       }
-      if (!event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-      const digit = event.code.startsWith("Digit") ? event.code.slice(5) : event.key;
+      if (!event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)
+        return;
+      const digit = event.code.startsWith("Digit")
+        ? event.code.slice(5)
+        : event.key;
       const item = NAV_ITEMS.find((n) => n.shortcut === digit);
       if (item) {
         event.preventDefault();
@@ -40,15 +44,17 @@ export default function App() {
       <div className="flex min-w-0 flex-1 flex-col">
         <Header onOpenJobs={() => setJobsOpen(true)} />
         <main className="flex-1 overflow-y-auto">
-          <Routes>
-            <Route path="/" element={<Navigate to="/library" replace />} />
-            <Route path="/library" element={<Library />} />
-            <Route path="/moments" element={<MomentsReview />} />
-            <Route path="/editor" element={<ClipEditor />} />
-            <Route path="/export" element={<Export />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<Navigate to="/library" replace />} />
-          </Routes>
+          <PageErrorBoundary>
+            <Routes>
+              <Route path="/" element={<Navigate to="/library" replace />} />
+              <Route path="/library" element={<Library />} />
+              <Route path="/moments" element={<MomentsReview />} />
+              <Route path="/editor" element={<ClipEditor />} />
+              <Route path="/export" element={<Export />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="*" element={<Navigate to="/library" replace />} />
+            </Routes>
+          </PageErrorBoundary>
         </main>
       </div>
       <JobsDrawer open={jobsOpen} onClose={() => setJobsOpen(false)} />

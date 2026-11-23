@@ -906,7 +906,7 @@ function EditorWorkspace({ clipId }: { clipId: string }) {
                 aria-selected={tab === key}
                 data-testid={`tab-${key}`}
                 onClick={() => setTab(key)}
-                className={`min-w-0 flex-1 truncate border-b-2 px-1.5 py-2.5 text-xs whitespace-nowrap ${tab === key ? "border-accent text-fg" : "border-transparent text-muted hover:text-fg"}`}
+                className={`min-w-0 flex-auto truncate border-b-2 px-1.5 py-2.5 text-xs whitespace-nowrap ${tab === key ? "border-accent text-fg" : "border-transparent text-muted hover:text-fg"}`}
               >
                 {t(`pages.editor.tab.${key}`)}
               </button>
