@@ -1,4 +1,4 @@
-"""SQLModel tables: Source, Job, Moment, AppSetting (Clip arrives in Phase 3).
+"""SQLModel tables: Source, Job, Moment, Clip, AppSetting.
 
 JSON columns are replaced as a whole (never mutated in place) so SQLAlchemy notices changes.
 Transcripts live on disk as JSON (data/<source_id>/transcript.json); the DB keeps the state.
@@ -113,6 +113,20 @@ class Moment(SQLModel, table=True):
     platform: str = "youtube_shorts"
     raw_start: float | None = None  # boundaries before snapping (as proposed / dragged)
     raw_end: float | None = None
+    created_at: datetime = Field(default_factory=utcnow)
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
+class Clip(SQLModel, table=True):
+    """One short being edited. `edl` is the Edit Decision List (app/edl.py), the single source of
+    truth for preview and render. `work` tracks background steps: {"prepare": {...}, "reframe": {...}}."""
+
+    id: str = Field(primary_key=True)  # "clip_" + 8 hex chars
+    source_id: str = Field(index=True)
+    moment_id: int | None = Field(default=None, index=True)
+    status: str = "draft"  # draft | review | approved | rendered
+    edl: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    work: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)
 

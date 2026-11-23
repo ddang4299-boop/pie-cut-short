@@ -98,9 +98,15 @@ MOMENTS_INVALID = _register("MOMENTS_INVALID", E, 422, ("detail",))
 MOMENTS_PROVIDER_FAILED = _register("MOMENTS_PROVIDER_FAILED", E, 502, ("provider", "detail"))
 MOMENTS_PROVIDER_NOT_CONFIGURED = _register("MOMENTS_PROVIDER_NOT_CONFIGURED", E, 400, ("provider",))
 MOMENTS_FEWER_THAN_WANTED = _register("MOMENTS_FEWER_THAN_WANTED", W, 400, ("count",))
-MOMENTS_DUPLICATES_DROPPED = _register("MOMENTS_DUPLICATES_DROPPED", I, 400,("count", "total"))
+MOMENTS_DUPLICATES_DROPPED = _register("MOMENTS_DUPLICATES_DROPPED", I, 400, ("count", "total"))
 MOMENT_NOT_FOUND = _register("MOMENT_NOT_FOUND", E, 404)
 ANALYSIS_NOT_READY = _register("ANALYSIS_NOT_READY", E, 404)
+
+# --- Clips / editor (Phase 3) ---------------------------------------------
+CLIP_NOT_FOUND = _register("CLIP_NOT_FOUND", E, 404)
+CLIP_BUSY = _register("CLIP_BUSY", E, 409)
+PREPARE_FAILED = _register("PREPARE_FAILED", E, 500, ("detail",))
+REFRAME_FAILED = _register("REFRAME_FAILED", E, 500, ("detail",))
 
 del E, W, I
 

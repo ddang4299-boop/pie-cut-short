@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 from sqlmodel import col, select
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app import db, errors, jobs, moments_service, settings_store, tasks
+from app import clips_service, db, errors, jobs, moments_service, settings_store, tasks
 from app.config import APP_VERSION, get_settings
 from app.models import (
     JOB_ACTIVE,
@@ -35,6 +35,7 @@ from app.models import (
     PLATFORMS,
     STEPS,
     Job,
+    Moment,
     Source,
 )
 from pipeline import ingest, preflight, transcribe
@@ -53,6 +54,7 @@ async def lifespan(_: FastAPI):
     tasks.register_handlers(queue)
     queue.recover()  # resume jobs interrupted by a crash/close, delete temp files
     tasks.reconcile_sources()  # sources whose job gave up -> error (Retry in the Library)
+    clips_service.reconcile()  # clip work left "running" by a crash -> pending
     jobs.set_queue(queue)
     watcher = moments_service.ResultWatcher()
     if settings.start_job_workers:
@@ -217,9 +219,13 @@ def source_out(src: Source, active_job: Job | None = None, moment_counts: dict[s
     }
 
 
+SOURCE_JOB_KINDS = ("pipeline", "download")  # clip jobs (editor) never make a source "busy"
+
+
 def _active_jobs_by_source() -> dict[str, Job]:
     with db.session() as s:
-        rows = s.exec(select(Job).where(col(Job.status).in_(JOB_ACTIVE)).order_by(Job.created_at)).all()
+        rows = s.exec(select(Job).where(col(Job.status).in_(JOB_ACTIVE), col(Job.kind).in_(SOURCE_JOB_KINDS))
+                      .order_by(Job.created_at)).all()
     out: dict[str, Job] = {}
     for job in rows:
         if job.source_id and (job.source_id not in out or job.status == JOB_RUNNING):
@@ -438,7 +444,7 @@ def delete_source(source_id: str, delete_media: bool = False) -> dict[str, Any]:
     queue = jobs.get_queue()
     queue.cancel_for_source(source_id)
     deadline = time.monotonic() + 15
-    while source_id in _active_jobs_by_source() and time.monotonic() < deadline:
+    while time.monotonic() < deadline:  # wait for running jobs (pipeline or clip) to stop
         with db.session() as s:
             if not s.exec(select(Job).where(Job.source_id == source_id, Job.status == JOB_RUNNING)).first():
                 break
@@ -451,6 +457,7 @@ def delete_source(source_id: str, delete_media: bool = False) -> dict[str, Any]:
             s.delete(job)
         s.commit()
     moments_service.delete_for_source(source_id)
+    clips_service.delete_for_source(source_id)
     removed = False
     if delete_media:
         folder = tasks.source_dir(source_id)
@@ -523,8 +530,11 @@ class MomentCreate(BaseModel):
 
 @app.post("/sources/{source_id}/moments")
 def create_moment(source_id: str, body: MomentCreate) -> dict[str, Any]:
-    return moments_service.create_manual(source_id, start=body.start, end=body.end, title=body.title,
-                                         hook=body.hook, snap_bounds=body.snap, status=body.status)
+    moment = moments_service.create_manual(source_id, start=body.start, end=body.end, title=body.title,
+                                           hook=body.hook, snap_bounds=body.snap, status=body.status)
+    if moment["status"] == "approved":
+        clips_service.ensure_clip(moment)
+    return moment
 
 
 class FindBody(BaseModel):
@@ -568,13 +578,62 @@ class MomentPatch(BaseModel):
 def patch_moment(moment_id: int, body: MomentPatch) -> dict[str, Any]:
     data = body.model_dump(exclude_unset=True, exclude={"snap"})
     data = {k: v for k, v in data.items() if v is not None}
-    return moments_service.update_moment(moment_id, data, snap_bounds=body.snap)
+    moment = moments_service.update_moment(moment_id, data, snap_bounds=body.snap)
+    if moment["status"] == "approved":
+        clips_service.ensure_clip(moment)  # approving creates the clip (once)
+    clips_service.sync_moment(moment)  # an existing clip follows range / style / platform changes
+    return moment
 
 
 @app.delete("/moments/{moment_id}")
 def remove_moment(moment_id: int) -> dict[str, Any]:
     moments_service.delete_moment(moment_id)
+    clips_service.delete_for_moment(moment_id)
     return {"id": moment_id, "deleted": True}
+
+
+@app.post("/moments/{moment_id}/clip")
+def open_moment_clip(moment_id: int) -> dict[str, Any]:
+    """The clip of a moment, created on demand (the editor opens moments by id)."""
+    with db.session() as s:
+        m = s.get(Moment, moment_id)
+    if m is None:
+        raise errors.AppError(errors.MOMENT_NOT_FOUND)
+    return clips_service.ensure_clip(moments_service.moment_out(m))
+
+
+# --------------------------------------------------------------------------
+# Clips (EDL)
+# --------------------------------------------------------------------------
+@app.get("/sources/{source_id}/clips")
+def get_clips(source_id: str) -> list[dict[str, Any]]:
+    tasks.load_source(source_id)
+    return clips_service.list_clips(source_id)
+
+
+@app.get("/clips/{clip_id}")
+def get_clip(clip_id: str) -> dict[str, Any]:
+    return clips_service.get_clip(clip_id)
+
+
+class ClipPatch(BaseModel):
+    edl: dict[str, Any] | None = None  # partial EDL: each section sent replaces that section
+    status: str | None = None
+
+
+@app.patch("/clips/{clip_id}")
+def patch_clip(clip_id: str, body: ClipPatch) -> dict[str, Any]:
+    return clips_service.patch_clip(clip_id, edl_patch=body.edl, status=body.status)
+
+
+class ReframeBody(BaseModel):
+    mode: str | None = None  # auto | split | cursor; None = keep the clip's mode
+
+
+@app.post("/clips/{clip_id}/reframe")
+def reframe_clip(clip_id: str, body: ReframeBody | None = None) -> dict[str, Any]:
+    """Recompute the framing automatically (overwrites manual keyframes; the UI confirms first)."""
+    return clips_service.recompute(clip_id, (body or ReframeBody()).mode)
 
 
 class SnapBody(BaseModel):

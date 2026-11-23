@@ -1,7 +1,8 @@
 """In-process background job queue (no Redis/Celery), state in SQLite.
 
-- One worker thread per lane ("main" for heavy media work, "download" for URL imports), so a
-  long download never blocks transcription of another source.
+- One worker thread per lane ("main" for heavy media work, "download" for URL imports, "edit" for
+  short clip jobs such as reframing), so a long download never blocks transcription of another
+  source and the editor stays responsive while a long video is processed.
 - Progress is written to the Job row (throttled); the UI polls GET /jobs every second.
 - Each job has a log file: data/logs/job_<id>.log.
 - Cancel: queued jobs are marked cancelled; running jobs get a flag, and any child process
@@ -29,7 +30,7 @@ from app.models import JOB_ACTIVE, JOB_CANCELLED, JOB_DONE, JOB_ERROR, JOB_QUEUE
 
 log = logging.getLogger("shortforge.jobs")
 
-LANES = ("main", "download")
+LANES = ("main", "download", "edit")
 PROGRESS_WRITE_INTERVAL = 0.5  # seconds
 TEMP_PATTERNS = ("*.tmp", "*.part", "*.tmp.*", "*.ytdl")
 MAX_ATTEMPTS = 3  # a job interrupted this many times is not resumed again
