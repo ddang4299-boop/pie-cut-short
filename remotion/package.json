@@ -1,0 +1,25 @@
+{
+  "name": "shortforge-remotion",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Remotion composition for ShortForge: renders a clip's EDL (video framing, captions, hook, progress bar) at 1080x1920.",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@fontsource/be-vietnam-pro": "5.3.0",
+    "@remotion/bundler": "4.0.545",
+    "@remotion/cli": "4.0.545",
+    "@remotion/renderer": "4.0.545",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "remotion": "4.0.545",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "typescript": "7.0.2"
+  }
+}
