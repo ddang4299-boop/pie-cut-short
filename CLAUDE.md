@@ -259,7 +259,7 @@ Reference numbers for a mid-range GPU (e.g. RTX 3060); CPU being 3–5× slower 
 - [x] Phase 2 — Analyze + Moment proposals + Moments Review
 - [x] Phase 3 — Reframe + Clip Editor (partial: face tracking not yet checked on a real talking-head sample, see BLOCKED.md)
 - [x] Phase 4 — Captions + Remotion
-- [ ] Phase 5 — ElevenLabs
+- [x] Phase 5 — ElevenLabs (partial: verified with the mock client only; real-key check in BLOCKED.md)
 - [ ] Phase 6 — Render + Export + CapCut
 - [ ] Phase 7 — Polish
 - [ ] Phase 8 — (Optional) WhisperX, Auto-Editor, Pedalboard, VideoLingo, Twitch

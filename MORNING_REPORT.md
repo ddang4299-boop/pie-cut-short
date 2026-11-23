@@ -216,3 +216,28 @@ Bỏ qua: không có thư mục `vendor/claude-shorts`. Nếu muốn dùng lại
 
 **Lưu ý**
 - Bản render thử dùng trình duyệt Edge có sẵn trên máy; Phase 6 sẽ chốt cách render đầy đủ.
+
+## Phase 5 — ElevenLabs (lồng tiếng) ⚠️ PARTIAL
+
+**Đã làm được**
+- `voice.py` + `voice_service.py`: tạo lồng tiếng (TTS) bằng SDK chính thức `elevenlabs`, danh sách giọng (có nghe thử), Voice Isolator (tách giọng nói), xem mức credit đã dùng.
+  - Mô hình mặc định **Flash v2.5** (có tiếng Việt, ½ credit/ký tự). Multilingual v2 **không có tiếng Việt** nên được ghi rõ trong danh sách.
+  - **Bộ nhớ đệm theo hash** (kịch bản + giọng + mô hình + thiết lập): tạo lại cùng nội dung **không tốn credit**, không gọi API.
+  - **Luôn hỏi trước khi tốn credit**: hộp xác nhận hiện số ký tự, số credit ước tính và số credit còn lại. Nếu đã có trong bộ nhớ đệm thì dùng luôn, không hỏi.
+  - Lỗi được dịch EN/VI: chưa có khoá, khoá sai, hết credit, thiếu quyền, quá nhiều yêu cầu, mất mạng, giọng không tồn tại… Không có khoá thì app vẫn chạy bình thường, chỉ tắt tính năng giọng.
+- Thẻ **Giọng nói** trong trình chỉnh sửa: kịch bản (đếm ký tự + credit), nút **Gợi ý kịch bản** (từ transcript + hook, theo ngôn ngữ video), chọn giọng + nghe thử, chọn mô hình, thanh trượt độ ổn định / độ giống / phong cách / tốc độ, nút Tạo, vị trí bắt đầu (gõ, đặt tại đầu phát, hoặc **kéo khối xanh trên track Lồng tiếng**), âm lượng, ducking (mặc định −12 dB), báo khi kịch bản đã đổi so với bản đã tạo.
+- **Xem trước có tiếng**: lồng tiếng phát cùng video, âm thanh gốc tự giảm (ducking) khi lồng tiếng phát; bật tách giọng thì nghe giọng đã tách thay cho âm gốc.
+- Thẻ **Âm thanh**: công tắc Tách giọng nói (ước tính credit, hỏi trước).
+- **Cài đặt**: mục Lồng tiếng ElevenLabs (trạng thái khoá, mức dùng, giọng mặc định, mô hình mặc định).
+- Chế độ **giả lập** `ELEVENLABS_MOCK=1` (âm thử, không gọi mạng, không tốn credit) để kiểm thử.
+
+**Kiểm thử**
+- pytest backend: **221/221 pass** (thêm 14 bài: ước tính, phân loại lỗi, bộ nhớ đệm, xác nhận trước khi tốn, chặn đường dẫn lạ, hết credit, tách giọng).
+- Vitest 51/51, `npm run build` pass, kiểm tra khoá en/vi pass.
+- Smoke test (backend chạy giả lập): **97 kiểm tra pass**. Luồng mới: viết kịch bản tiếng Việt → thấy ước tính credit → bấm Tạo → hộp xác nhận hiện đúng số ký tự/credit, chưa tốn gì → xác nhận → khối lồng tiếng hiện trên timeline → bấm phát: nghe lồng tiếng, âm gốc giảm đúng −12 dB → tạo lại cùng kịch bản: 0 credit, không hỏi, không gọi API → kéo khối + Ctrl+Z → bật/tắt tách giọng → trang Cài đặt hiện trạng thái khoá.
+
+**Cần bạn làm** (ghi trong `BLOCKED.md`)
+- Thử với **khoá ElevenLabs thật**: theo quy tắc tôi không được gọi API thật (tốn credit) và `.env` chưa có khoá. Thêm `ELEVENLABS_API_KEY` vào `.env`, khởi động lại backend (không bật `ELEVENLABS_MOCK`), tạo thử một câu ngắn.
+
+**Lưu ý**
+- Chưa làm ElevenLabs Scribe (chuyển giọng nói thành chữ) vì không bắt buộc; faster-whisper đã chạy tốt và miễn phí.
