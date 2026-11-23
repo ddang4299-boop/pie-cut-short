@@ -8,6 +8,8 @@ import {
   Package,
   Pencil,
   Play,
+  RotateCcw,
+  ScrollText,
   Upload,
   X,
 } from "lucide-react";
@@ -16,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { JobLog } from "../components/JobLog";
 import { EmptyState, ErrorState, PageHeader, Skeleton } from "../components/states";
 import { useToast } from "../components/Toasts";
 import { Tooltip } from "../components/Tooltip";
@@ -376,6 +379,9 @@ function ClipRow({
   const info = clip.render.info;
   const final = clip.files.final;
   const isBusy = busy(clip);
+  const [showLog, setShowLog] = useState(false);
+  // the log of the latest render or CapCut job (whichever ran last)
+  const logJob = [clip.capcut, clip.render].filter((x) => x.job_id).sort((a, b) => (b.job_id ?? 0) - (a.job_id ?? 0))[0]?.job_id ?? null;
   const num = (v: number, digits = 1) => new Intl.NumberFormat(i18n.language, { maximumFractionDigits: digits, minimumFractionDigits: digits }).format(v);
   const state = clip.render.state === "idle" && final ? "done" : clip.render.state;
   const stateColor =
@@ -447,8 +453,8 @@ function ClipRow({
         <div className="mt-2 flex flex-wrap gap-1.5">
           <Tooltip label={t("pages.export.render_hint")}>
             <button type="button" data-testid={`render-${clip.id}`} disabled={isBusy} onClick={onRender} className={final ? btn : primaryBtn}>
-              <Clapperboard className="size-3.5" />
-              {final ? t("pages.export.rerender") : t("pages.export.render")}
+              {state === "error" || state === "cancelled" ? <RotateCcw className="size-3.5" /> : <Clapperboard className="size-3.5" />}
+              {state === "error" || state === "cancelled" ? t("common.retry") : final ? t("pages.export.rerender") : t("pages.export.render")}
             </button>
           </Tooltip>
           {final && (
@@ -523,12 +529,25 @@ function ClipRow({
               )}
             </>
           )}
+          {logJob && (
+            <Tooltip label={showLog ? t("common.hide_log") : t("common.view_log")}>
+              <button type="button" data-testid={`log-${clip.id}`} onClick={() => setShowLog((v) => !v)} aria-expanded={showLog} className={btn}>
+                <ScrollText className="size-3.5" />
+                {showLog ? t("common.hide_log") : t("common.view_log")}
+              </button>
+            </Tooltip>
+          )}
           <Tooltip label={t("pages.export.open_editor")}>
             <button type="button" onClick={onEditor} aria-label={t("pages.export.open_editor")} className={btn}>
               <Pencil className="size-3.5" />
             </button>
           </Tooltip>
         </div>
+        {showLog && logJob && (
+          <div className="mt-2" data-testid={`joblog-${clip.id}`}>
+            <JobLog jobId={logJob} live={isBusy} />
+          </div>
+        )}
       </div>
     </li>
   );

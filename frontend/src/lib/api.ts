@@ -337,6 +337,9 @@ export interface AppSettings {
   renderer: Renderer;
   output_dir: string;
   platform_presets: Partial<Record<Platform, Partial<PresetOverride>>>;
+  whisper_model: string | null;
+  device: Device | null;
+  channels: Channel[];
   env: {
     llm_provider: string;
     anthropic_configured: boolean;
@@ -347,7 +350,59 @@ export interface AppSettings {
     elevenlabs_mock: boolean;
   };
   effective_llm_provider: LlmProvider;
+  effective: { whisper_model: string; device: Device; env_whisper_model: string; env_device: Device };
+  choices: { whisper_models: string[]; devices: Device[] };
 }
+
+export type Device = "auto" | "cuda" | "mps" | "cpu";
+
+/** Per-channel preset (Settings → Channels); applied to clips in one click. */
+export interface Channel {
+  id: string;
+  name: string;
+  platform: Platform;
+  caption_style: CaptionStyle;
+  caption_position_y: number;
+  words_per_page: number;
+  font_size: number;
+  hook_enabled: boolean;
+  hook_position_y: number;
+  progress_bar_enabled: boolean;
+  progress_color: string;
+  voice_id: string;
+}
+
+export const newChannel = (name: string): Channel => ({
+  id: "",
+  name,
+  platform: "youtube_shorts",
+  caption_style: "bold",
+  caption_position_y: 0.72,
+  words_per_page: 3,
+  font_size: 72,
+  hook_enabled: true,
+  hook_position_y: 0.18,
+  progress_bar_enabled: true,
+  progress_color: "#FFD400",
+  voice_id: "",
+});
+
+export type CacheKey = "transcripts" | "remotion_bundle" | "logs" | "voice_previews" | "voice_generated" | "whisper_models" | "outputs";
+export interface CacheItem {
+  key: CacheKey;
+  bytes: number;
+  files: number;
+  clearable: boolean;
+}
+export interface CacheSummary {
+  items: CacheItem[];
+  clearable_bytes: number;
+  cleared?: CacheKey[];
+  freed_bytes?: number;
+  warning?: ApiIssue;
+}
+export const getCache = () => apiGet<CacheSummary>("/cache");
+export const clearCache = (keys?: CacheKey[]) => apiSend<CacheSummary>("POST", "/cache/clear", keys ? { keys } : {});
 
 export const getAnalysis = (id: string) => apiGet<Analysis>(`/sources/${id}/analysis`);
 export const getWaveform = (id: string) => apiGet<Waveform>(`/sources/${id}/waveform`);
@@ -355,6 +410,8 @@ export const listMoments = (id: string) => apiGet<Moment[]>(`/sources/${id}/mome
 export const createMoment = (id: string, body: { start: number; end: number; title?: string; hook?: string; snap?: boolean; status?: MomentStatus }) =>
   apiSend<Moment>("POST", `/sources/${id}/moments`, body);
 export const patchMoment = (id: number, body: MomentPatch) => apiSend<Moment>("PATCH", `/moments/${id}`, body);
+export const batchMoments = (sourceId: string, body: { ids: number[]; status: MomentStatus; channel_id?: string }) =>
+  apiSend<{ updated: number[]; skipped: number[]; moments: Moment[] }>("POST", `/sources/${sourceId}/moments/batch`, body);
 export const deleteMoment = (id: number) => apiSend<{ deleted: boolean }>("DELETE", `/moments/${id}`);
 export const snapRange = (id: string, start: number, end: number) =>
   apiSend<{ start: number; end: number }>("POST", `/sources/${id}/snap`, { start, end });
@@ -362,7 +419,7 @@ export const findMoments = (id: string, provider?: LlmProvider) =>
   apiSend<Source>("POST", `/sources/${id}/moments/find`, provider ? { provider } : {});
 export const importMomentsNow = (id: string) => apiSend<Source>("POST", `/sources/${id}/moments/import`);
 export const getSettings = () => apiGet<AppSettings>("/settings");
-export const patchSettings = (body: Partial<Omit<AppSettings, "env" | "effective_llm_provider">>) => apiSend<AppSettings>("PATCH", "/settings", body);
+export const patchSettings = (body: Partial<Omit<AppSettings, "env" | "effective_llm_provider" | "effective" | "choices">>) => apiSend<AppSettings>("PATCH", "/settings", body);
 
 // --- Clips (Phase 3) --------------------------------------------------------
 
@@ -424,6 +481,7 @@ export interface Clip extends ClipSummary {
 export const listClips = (sourceId: string) => apiGet<ClipSummary[]>(`/sources/${sourceId}/clips`);
 export const getClip = (id: string) => apiGet<Clip>(`/clips/${id}`);
 export const openMomentClip = (momentId: number) => apiSend<Clip>("POST", `/moments/${momentId}/clip`);
+export const applyChannel = (clipId: string, channelId: string) => apiSend<Clip>("POST", `/clips/${clipId}/channel`, { channel_id: channelId });
 export const patchClip = (id: string, body: { edl?: Partial<Pick<Edl, EdlSection>>; status?: ClipStatus }) =>
   apiSend<Clip>("PATCH", `/clips/${id}`, body);
 /** The clip's captions as SubRip, generated from the saved EDL. */

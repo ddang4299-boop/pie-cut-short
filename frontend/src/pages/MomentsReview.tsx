@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { BatchBar } from "../components/moments/BatchBar";
 import { MomentCard } from "../components/moments/MomentCard";
 import { Player } from "../components/moments/Player";
 import { Minimap, ZoomTimeline } from "../components/moments/Timeline";
@@ -36,12 +37,14 @@ import {
   getAnalysis,
   getTranscript,
   getWaveform,
+  batchMoments,
   listMoments,
   patchMoment,
   type Analysis,
   type ApiIssue,
   type Moment,
   type MomentPatch,
+  type MomentStatus,
   type Waveform,
   type Word,
 } from "../lib/api";
@@ -66,7 +69,8 @@ import { useSources } from "../state/sources";
 type Entry =
   | { kind: "patch"; id: number; before: MomentPatch; after: MomentPatch }
   | { kind: "create"; moment: Moment }
-  | { kind: "delete"; moment: Moment };
+  | { kind: "delete"; moment: Moment }
+  | { kind: "batch"; items: { id: number; before: MomentPatch; after: MomentPatch }[] };
 
 interface SourceData {
   words: Word[];
@@ -137,6 +141,8 @@ export default function MomentsReview() {
   const [busy, setBusy] = useState(false);
 
   const video = useRef<HTMLVideoElement>(null);
+  const [checked, setChecked] = useState<Set<number>>(new Set());
+  const [batchBusy, setBatchBusy] = useState(false);
   const pending = useRef(new Map<number, MomentPatch>());
   const timers = useRef(new Map<number, number>());
   const idMap = useRef(new Map<number, number>());
@@ -158,6 +164,7 @@ export default function MomentsReview() {
   const load = useCallback(async (id: string, keepSelection = false) => {
     setLoading(true);
     setLoadError(null);
+    if (!keepSelection) setChecked(new Set());
     try {
       const [transcript, analysis, waveform, list] = await Promise.all([
         optional(getTranscript(id)),
@@ -336,7 +343,15 @@ export default function MomentsReview() {
   const runEntry = useCallback(
     async (entry: Entry, direction: "undo" | "redo") => {
       try {
-        if (entry.kind === "patch") {
+        if (entry.kind === "batch") {
+          // undo/redo of a batch restores the statuses (a channel already applied to clips stays)
+          for (const item of entry.items) {
+            const id = resolve(item.id);
+            const fields = direction === "undo" ? item.before : item.after;
+            applyLocal(id, { ...fields, snap: false });
+            queueSave(id, { ...fields, snap: false });
+          }
+        } else if (entry.kind === "patch") {
           const id = resolve(entry.id);
           const fields = direction === "undo" ? entry.before : entry.after;
           // undo restores exact values; redo repeats the original request (snapping again if it did)
@@ -376,6 +391,42 @@ export default function MomentsReview() {
 
   // ------------------------------------------------------------------ actions
   const setStatus = useCallback((id: number, status: Moment["status"]) => edit(id, { status }), [edit]);
+
+  const checkOne = useCallback((id: number, on: boolean) => {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
+
+  /** Approve / reject every checked moment (optionally applying a channel preset to the new clips). */
+  const applyBatch = useCallback(
+    async (status: MomentStatus, channelId: string | null) => {
+      if (!sourceId) return;
+      const ids = visible.filter((m) => checked.has(m.id)).map((m) => m.id);
+      if (!ids.length) return;
+      setBatchBusy(true);
+      try {
+        await flushAll();
+        const res = await track(batchMoments(sourceId, { ids, status, ...(channelId ? { channel_id: channelId } : {}) }));
+        const items = ids.map((id) => {
+          const m = moments.find((x) => x.id === id)!;
+          return { id, before: { status: m.status }, after: { status } };
+        });
+        setMoments(res.moments);
+        setHistory((h) => historyPush(h, { kind: "batch", items }));
+        setChecked(new Set());
+        toast.show(t(status === "approved" ? "pages.moments.batch_approved_toast" : "pages.moments.batch_rejected_toast", { count: res.updated.length }), "success");
+      } catch (err) {
+        fail(err);
+      } finally {
+        setBatchBusy(false);
+      }
+    },
+    [sourceId, moments, visible, checked, flushAll, track, toast, t, fail],
+  );
 
   const setRange = useCallback(
     (id: number, start: number, end: number, snap = true) => {
@@ -727,6 +778,13 @@ export default function MomentsReview() {
               </button>
             </Tooltip>
           </div>
+          <BatchBar
+            visibleIds={visible.map((m) => m.id)}
+            checked={checked}
+            busy={batchBusy}
+            onCheckAll={(all) => setChecked(all ? new Set(visible.map((m) => m.id)) : new Set())}
+            onApply={(status, channelId) => void applyBatch(status, channelId)}
+          />
         </div>
 
         <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3" data-testid="moment-list">
@@ -767,6 +825,8 @@ export default function MomentsReview() {
               onSelect={selectMoment}
               onSetStatus={setStatus}
               onDelete={(id) => void deleteManual(id)}
+              checked={checked.has(m.id)}
+              onCheck={checkOne}
             />
           ))}
         </div>

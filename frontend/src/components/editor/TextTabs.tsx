@@ -1,10 +1,10 @@
 import { Short } from "@composition/Short";
 import { Player } from "@remotion/player";
-import { Download, Replace } from "lucide-react";
+import { Download, Replace, Wand2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-import { CAPTION_STYLES, PLATFORMS, clipSrtUrl, type Edl, type Platform } from "../../lib/api";
+import { CAPTION_STYLES, PLATFORMS, clipSrtUrl, getSettings, type Channel, type Edl, type Platform } from "../../lib/api";
 import { countMatches, findReplace, pageAt, pagesOf, retimePage, setPageText, toggleEmphasis, type CaptionPage, type CaptionStyle } from "../../lib/captions";
 import { formatTimecode } from "../../lib/format";
 import { TimeField } from "../TimeField";
@@ -388,21 +388,70 @@ export function HookTab({ edl, duration, onHook }: { edl: Edl; duration: number;
 
 const BAR_COLORS = ["#FFD400", "#FF3D7F", "#3DDC97", "#4FC3F7", "#FFFFFF"];
 
+/** Pick a channel preset (Settings → Channels) and apply it to this clip (undoable). */
+function ChannelPicker({ onApply }: { onApply: (c: Channel) => void }) {
+  const { t } = useTranslation();
+  const [channels, setChannels] = useState<Channel[] | null>(null);
+  const [pick, setPick] = useState("");
+  useEffect(() => {
+    getSettings()
+      .then((s) => {
+        setChannels(s.channels ?? []);
+        setPick(s.channels?.[0]?.id ?? "");
+      })
+      .catch(() => setChannels([]));
+  }, []);
+  if (!channels) return null;
+  const chosen = channels.find((c) => c.id === pick);
+  return (
+    <Section title={t("pages.editor.channel_title")}>
+      {channels.length === 0 ? (
+        <p className="text-xs text-muted" data-testid="channel-none">{t("pages.editor.channel_none")}</p>
+      ) : (
+        <div className="flex items-center gap-2">
+          <select className={selectCls} value={pick} data-testid="channel-pick" aria-label={t("pages.editor.channel_title")} onChange={(e) => setPick(e.target.value)}>
+            {channels.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <Tooltip label={t("pages.editor.channel_apply_hint")} side="top">
+            <button
+              type="button"
+              data-testid="channel-apply"
+              disabled={!chosen}
+              onClick={() => chosen && onApply(chosen)}
+              className="flex shrink-0 items-center gap-1 rounded-md border border-line px-2 py-1.5 text-xs hover:border-accent disabled:opacity-40"
+            >
+              <Wand2 className="size-3.5" />
+              {t("pages.editor.channel_apply")}
+            </button>
+          </Tooltip>
+        </div>
+      )}
+    </Section>
+  );
+}
+
 export function ExportTab({
   edl,
   onProgress,
   onPlatform,
+  onChannel,
   render,
 }: {
   edl: Edl;
   onProgress: (p: Edl["progress_bar"]) => void;
   onPlatform: (p: Platform) => void;
+  onChannel?: (c: Channel) => void;
   render?: ReactNode;
 }) {
   const { t } = useTranslation();
   const p = edl.progress_bar;
   return (
     <div data-testid="export-tab">
+      {onChannel && <ChannelPicker onApply={onChannel} />}
       <Section title={t("pages.editor.target")}>
         <Row label={t("pages.moments.platform")}>
           <select className={selectCls} value={edl.platform} data-testid="platform" onChange={(e) => onPlatform(e.target.value as Platform)}>

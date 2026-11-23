@@ -59,6 +59,7 @@ import {
   type CropMode,
   type Region,
 } from "../lib/edl";
+import { applyChannelToEdl } from "../lib/channels";
 import { translateIssue } from "../lib/errors";
 import { formatDuration, formatTimecode } from "../lib/format";
 import { frameStep, HISTORY_LIMIT } from "../lib/moments";
@@ -965,6 +966,12 @@ function EditorWorkspace({ clipId }: { clipId: string }) {
                 edl={edl}
                 onProgress={(p) => setSection("progress_bar", p)}
                 onPlatform={(p) => setSection("platform", p)}
+                onChannel={(c) => {
+                  const cur = edlRef.current;
+                  if (!cur) return;
+                  apply(applyChannelToEdl(cur, c), "record");
+                  toast.show(t("pages.editor.channel_applied", { name: c.name }), "success");
+                }}
                 render={<RenderPanel clipId={clip.id} duration={duration} platform={edl.platform} onBeforeCall={flush} />}
               />
             ) : null}

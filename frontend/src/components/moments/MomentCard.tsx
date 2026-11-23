@@ -50,12 +50,16 @@ export const MomentCard = memo(function MomentCard({
   onSelect,
   onSetStatus,
   onDelete,
+  checked = false,
+  onCheck,
 }: {
   moment: Moment;
   selected: boolean;
   onSelect: (id: number) => void;
   onSetStatus: (id: number, status: Moment["status"]) => void;
   onDelete: (id: number) => void;
+  checked?: boolean;
+  onCheck?: (id: number, checked: boolean) => void;
 }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
@@ -76,6 +80,17 @@ export const MomentCard = memo(function MomentCard({
       }`}
     >
       <div className="flex items-start gap-3">
+        {onCheck && (
+          <input
+            type="checkbox"
+            className="mt-3 size-3.5 shrink-0 cursor-pointer accent-[#FF3D7F]"
+            data-testid="moment-check"
+            aria-label={t("pages.moments.batch_check", { title })}
+            checked={checked}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => onCheck(moment.id, e.target.checked)}
+          />
+        )}
         {manual ? (
           <Tooltip label={t("pages.moments.manual")} side="right">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-full border border-line text-muted">

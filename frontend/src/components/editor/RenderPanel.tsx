@@ -17,6 +17,7 @@ import {
 } from "../../lib/api";
 import { translateIssue } from "../../lib/errors";
 import { formatPercent } from "../../lib/format";
+import { JobLog } from "../JobLog";
 import { useToast } from "../Toasts";
 import { Tooltip } from "../Tooltip";
 import { Row, Section, selectCls } from "./Inspector";
@@ -43,6 +44,7 @@ export function RenderPanel({
   const [renderer, setRenderer] = useState<Renderer | "">("");
   const [state, setState] = useState<ExportClip | null>(null);
   const [sending, setSending] = useState(false);
+  const [showLog, setShowLog] = useState(false);
 
   useEffect(() => {
     getRenderPresets().then(setPresets).catch(() => {});
@@ -134,7 +136,19 @@ export function RenderPanel({
             </div>
           )}
           {render.state === "error" && (
-            <p className="text-danger">{render.error ? translateIssue(t, render.error) : t("pages.editor.render_failed")}</p>
+            <>
+              <p className="text-danger">{render.error ? translateIssue(t, render.error) : t("pages.editor.render_failed")}</p>
+              {render.job_id && (
+                <button type="button" className="mt-1 text-muted underline hover:text-fg" data-testid="render-log-toggle" onClick={() => setShowLog((v) => !v)}>
+                  {showLog ? t("common.hide_log") : t("common.view_log")}
+                </button>
+              )}
+              {showLog && render.job_id && (
+                <div className="mt-2">
+                  <JobLog jobId={render.job_id} live={false} />
+                </div>
+              )}
+            </>
           )}
           {render.state === "cancelled" && <p className="text-muted">{t("render_state.cancelled")}</p>}
           {render.state === "done" &&
