@@ -148,3 +148,40 @@ Bỏ qua: không có thư mục `vendor/claude-shorts`. Nếu muốn dùng lại
 **Việc bạn nên làm khi thức dậy**
 - Chạy thật `/find-moments <id>` trong Claude Code với một video của bạn. Tôi mới chỉ tự viết `moments.json` để thử luồng.
 - Nếu muốn dùng nhà cung cấp `anthropic` / `openai`: thêm khoá vào `.env` và thử. Tôi chưa gọi API trả phí nào.
+
+## Phase 3 — Căn khung 9:16 + Trình chỉnh sửa clip (PARTIAL)
+
+**Đã làm được**
+- Khi bạn **duyệt** một khoảnh khắc, app tự tạo một clip (EDL), cắt thô từ video gốc (giữ thêm 2 s mỗi đầu) và tự tính khung hình 9:16 trong nền. Việc này chạy ở hàng đợi riêng nên không phải chờ phiên âm.
+- Cách tự căn khung theo loại nội dung:
+  - Người nói chuyện trước camera → bám khuôn mặt chính.
+  - Podcast → bám người đang nói (dựa vào chuyển động miệng), chuyển người thì cắt thẳng.
+  - Game có facecam → chia đôi: facecam ở trên, game ở dưới.
+  - Quay màn hình → bám con trỏ chuột, phóng to 1.3×. Nếu hiếm khi thấy con trỏ thì hiện cả màn hình trên nền làm mờ.
+  - Không thấy ai → tìm người (HOG) → cuối cùng cắt giữa.
+  - Video đã dọc → giữ nguyên.
+- Chuyển động khung được làm mượt (One-Euro, vùng chết, giới hạn 25 % chiều rộng/giây) và rút gọn còn ít keyframe để dễ sửa tay.
+- Trang **Trình chỉnh sửa clip**:
+  - Xem trước 9:16 bên trái, video nguồn 16:9 với khung cắt kéo được ở giữa, bảng thuộc tính bên phải, timeline nhiều track ở dưới.
+  - Thẻ Khung hình: 4 chế độ, danh sách keyframe sửa số trực tiếp, kiểu chuyển động, Lấp đầy/Làm mờ, chia đôi (kéo, đổi cỡ, vẽ lại 2 vùng; chỉnh tỉ lệ trên/dưới), "Tính lại tự động" (có hỏi xác nhận).
+  - Thẻ Âm thanh cơ bản (âm lượng, LUFS mục tiêu, giảm nhạc nền). Các thẻ khác hiện chú thích "có trong bản sau".
+  - Phím tắt: S cắt đoạn, Delete xoá đoạn (jump cut), F thêm keyframe, Ctrl+Z/Ctrl+Y, Ctrl+cuộn để phóng timeline.
+  - Lớp phủ vùng an toàn cho Shorts/TikTok/Reels. Tự lưu sau 500 ms, hoàn tác 100 bước. "← Khoảnh khắc" quay về đúng vị trí cũ.
+- Phần xem trước dùng đúng công thức tính khung như backend (đã kiểm tra bằng bộ số liệu chung cho cả Python và TypeScript). Sửa một keyframe thì xem trước cập nhật sau khoảng 57 ms.
+
+**Vì sao là PARTIAL**
+- Điều kiện "clip mẫu bám theo khuôn mặt mượt mà" chưa kiểm tra được trên video thật: file mẫu trong `samples/` là hình test tổng hợp, không có mặt người. Phần bám mặt đã được kiểm tra bằng dữ liệu giả lập trong pytest. Xem `BLOCKED.md`.
+
+**Kiểm thử**
+- pytest backend: **200/200 pass**.
+- Vitest: **41/41 pass**.
+- `npm run build`: pass.
+- Smoke test: tất cả pass. Luồng mới: mở clip từ khoảnh khắc → chờ căn khung xong → sửa số keyframe (xem trước đổi ngay, đã lưu) → kéo khung (chuyển sang Thủ công) → S cắt đoạn + Ctrl+Z → vùng an toàn → tiếng Việt không tràn ngang ở cả 6 thẻ → tải lại vẫn còn.
+
+**Quyết định quan trọng** (chi tiết trong `DECISIONS.md`)
+- Dùng HOG của OpenCV thay cho YOLO (không phải cài torch và tải model lớn).
+- Xem trước bằng canvas thay cho CSS transform, vì canvas hỗ trợ được chia đôi và nền làm mờ. Phase 4 sẽ thay bằng Remotion Player.
+- Kéo khung khi đang ở chế độ Tự động sẽ chuyển sang Thủ công. Nếu bạn sửa khung trong lúc máy đang tính lại, bản của bạn được giữ.
+
+**Việc bạn nên làm khi thức dậy**
+- Thêm một video có người nói (2–5 phút) vào `samples/`, nhập vào, duyệt một khoảnh khắc rồi mở Trình chỉnh sửa để xem khung có bám mặt mượt không.
