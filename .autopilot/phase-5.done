@@ -1,0 +1,5 @@
+PARTIAL: Phase 5 done against the mock ElevenLabs client; a real-key check is in BLOCKED.md (real API calls are not allowed in autopilot).
+voice.py (TTS flash_v2_5/v3/multilingual_v2, voices, isolator, hash cache, error mapping) + voice_service (confirm-before-spend 409, ledger, suggest).
+Voice tab, ClipAudio preview (voiceover + -12 dB ducking + isolated voice), timeline voiceover track, isolate toggle, Settings section, EN+VI.
+Checks: pytest 221/221, vitest 51/51, npm run build ok, locale parity ok, smoke 97/97 (ELEVENLABS_MOCK=1).
+Commits: c00c518 1936277 754f4b2.
