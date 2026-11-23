@@ -21,6 +21,7 @@ import { EditorTimeline } from "../components/editor/EditorTimeline";
 import { ClipAudio } from "../components/editor/ClipAudio";
 import { AudioTab, FramingTab, INSPECTOR_TABS, type InspectorTab } from "../components/editor/Inspector";
 import { PreviewCanvas, type Guide } from "../components/editor/PreviewCanvas";
+import { RenderPanel } from "../components/editor/RenderPanel";
 import { CaptionsTab, ExportTab, HookTab } from "../components/editor/TextTabs";
 import { IsolateToggle, VoiceTab } from "../components/editor/VoiceTab";
 import { SourceView, type Phase, type SplitPanel } from "../components/editor/SourceView";
@@ -960,7 +961,12 @@ function EditorWorkspace({ clipId }: { clipId: string }) {
             ) : tab === "hook" ? (
               <HookTab edl={edl} duration={duration} onHook={(h, mode, key) => setSection("hook_text", h, mode, key)} />
             ) : tab === "export" ? (
-              <ExportTab edl={edl} onProgress={(p) => setSection("progress_bar", p)} onPlatform={(p) => setSection("platform", p)} />
+              <ExportTab
+                edl={edl}
+                onProgress={(p) => setSection("progress_bar", p)}
+                onPlatform={(p) => setSection("platform", p)}
+                render={<RenderPanel clipId={clip.id} duration={duration} platform={edl.platform} onBeforeCall={flush} />}
+              />
             ) : null}
           </div>
         </aside>

@@ -718,8 +718,9 @@ def reconcile_sources() -> int:
 
 
 def register_handlers(queue: JobQueue) -> None:
-    from app import clips_service
+    from app import clips_service, render_service
 
     queue.register("pipeline", handle_pipeline)
     queue.register("download", handle_download)
     queue.register(clips_service.CLIP_JOB, clips_service.handle_clip)
+    render_service.register(queue)

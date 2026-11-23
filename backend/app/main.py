@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 from sqlmodel import col, select
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app import clips_service, db, errors, jobs, moments_service, settings_store, tasks, voice_service
+from app import clips_service, db, errors, jobs, moments_service, render_service, settings_store, tasks, voice_service
 from app.config import APP_VERSION, get_settings
 from app.models import (
     JOB_ACTIVE,
@@ -55,6 +55,7 @@ async def lifespan(_: FastAPI):
     queue.recover()  # resume jobs interrupted by a crash/close, delete temp files
     tasks.reconcile_sources()  # sources whose job gave up -> error (Retry in the Library)
     clips_service.reconcile()  # clip work left "running" by a crash -> pending
+    render_service.reconcile()  # render/CapCut state left "running" by a crash -> cancelled
     jobs.set_queue(queue)
     watcher = moments_service.ResultWatcher()
     if settings.start_job_workers:
@@ -728,6 +729,105 @@ def isolate_estimate(clip_id: str) -> dict[str, Any]:
 @app.post("/clips/{clip_id}/isolate")
 def isolate_voice(clip_id: str, body: ConfirmBody | None = None) -> dict[str, Any]:
     return voice_service.isolate(clip_id, confirm=(body or ConfirmBody()).confirm)
+
+
+# --------------------------------------------------------------------------
+# Render + export
+# --------------------------------------------------------------------------
+class RenderBody(BaseModel):
+    renderer: str | None = None  # remotion | ffmpeg; None = Settings default
+
+
+class BatchRenderBody(BaseModel):
+    clip_ids: list[str] = Field(min_length=1, max_length=200)
+    renderer: str | None = None
+
+
+@app.get("/render/presets")
+def render_presets() -> dict[str, Any]:
+    from pipeline import presets, render
+
+    return {"presets": presets.all_presets(settings_store.get("platform_presets")),
+            "defaults": presets.DEFAULT_PRESETS, "renderers": list(settings_store.RENDERERS),
+            "remotion_available": render.remotion_available()}
+
+
+@app.get("/render/encoders")
+def render_encoders() -> dict[str, Any]:
+    from pipeline import render
+
+    encs = render.detect_encoders(get_settings().ffmpeg_bin)
+    return {"encoders": encs, "labels": [render.encoder_label(e) for e in encs]}
+
+
+@app.get("/exports")
+def list_exports(source_id: str | None = None) -> list[dict[str, Any]]:
+    return render_service.list_exports(source_id)
+
+
+@app.get("/clips/{clip_id}/export")
+def get_export(clip_id: str) -> dict[str, Any]:
+    return render_service.export_out(clips_service._load(clip_id))
+
+
+@app.post("/clips/{clip_id}/render")
+def render_clip(clip_id: str, body: RenderBody | None = None) -> dict[str, Any]:
+    return render_service.queue_render(clip_id, (body or RenderBody()).renderer)
+
+
+@app.post("/renders/batch")
+def render_batch(body: BatchRenderBody) -> dict[str, Any]:
+    return render_service.queue_batch(body.clip_ids, body.renderer)
+
+
+@app.post("/clips/{clip_id}/render/cancel")
+def cancel_render(clip_id: str) -> dict[str, Any]:
+    return render_service.cancel(clip_id)
+
+
+@app.get("/clips/{clip_id}/render/file")
+def render_file(clip_id: str, kind: str = "final", download: bool = False) -> FileResponse:
+    path, media_type = render_service.file_path(clip_id, kind)
+    headers = {"Cache-Control": "no-cache"}
+    if download:
+        return FileResponse(path, media_type=media_type, filename=render_service.download_name(clip_id, kind),
+                            headers=headers)
+    return FileResponse(path, media_type=media_type, headers=headers)
+
+
+@app.post("/clips/{clip_id}/open-folder")
+def open_clip_folder(clip_id: str) -> dict[str, Any]:
+    return render_service.open_folder(clip_id)
+
+
+@app.post("/clips/{clip_id}/capcut")
+def capcut_bundle(clip_id: str) -> dict[str, Any]:
+    return render_service.queue_capcut(clip_id)
+
+
+@app.post("/clips/{clip_id}/import")
+async def import_edited(clip_id: str, request: Request, name: str = Query("edited.mp4", min_length=1)) -> dict[str, Any]:
+    """Raw-body upload of an MP4 edited in CapCut; it becomes the clip's final version."""
+    name = _safe_name(name)
+    if Path(name).suffix.lower() not in (".mp4", ".mov", ".m4v"):
+        raise errors.AppError(errors.IMPORT_INVALID_FILE, name=name)
+    clip = clips_service._load(clip_id)
+    folder = render_service.out_dir(clip)
+    folder.mkdir(parents=True, exist_ok=True)
+    part = folder / "import_upload.mp4.part"
+    written = 0
+    try:
+        with part.open("wb") as f:
+            async for chunk in request.stream():
+                f.write(chunk)
+                written += len(chunk)
+    except Exception as exc:
+        part.unlink(missing_ok=True)
+        raise errors.AppError(errors.UPLOAD_FAILED) from exc
+    if written == 0:
+        part.unlink(missing_ok=True)
+        raise errors.AppError(errors.IMPORT_INVALID_FILE, name=name)
+    return await run_in_threadpool(render_service.import_edited, clip_id, part, name)
 
 
 # --------------------------------------------------------------------------

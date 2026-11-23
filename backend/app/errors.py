@@ -123,6 +123,19 @@ VOICE_SCRIPT_TOO_LONG = _register("VOICE_SCRIPT_TOO_LONG", E, 400, ("max",))
 VOICE_NO_VOICE = _register("VOICE_NO_VOICE", E, 400)
 VOICE_AUDIO_MISSING = _register("VOICE_AUDIO_MISSING", E, 404)
 
+# --- Render / export ------------------------------------------------------
+RENDER_FAILED = _register("RENDER_FAILED", E, 500, ("detail",))
+RENDER_REMOTION_FAILED = _register("RENDER_REMOTION_FAILED", W, 500, ("detail",))
+RENDER_ENCODER_FALLBACK = _register("RENDER_ENCODER_FALLBACK", W, 500, ("encoder",))
+RENDER_SSIM_LOW = _register("RENDER_SSIM_LOW", W, 500, ("ssim",))
+RENDER_LOUDNESS_OFF = _register("RENDER_LOUDNESS_OFF", W, 500, ("lufs", "target"))
+RENDER_NOT_FOUND = _register("RENDER_NOT_FOUND", E, 404)
+RENDER_BUSY = _register("RENDER_BUSY", W, 409)
+CLIP_TOO_LONG = _register("CLIP_TOO_LONG", W, 400, ("seconds", "max", "platform"))
+EXPORT_FAILED = _register("EXPORT_FAILED", E, 500, ("detail",))
+IMPORT_INVALID_FILE = _register("IMPORT_INVALID_FILE", E, 400, ("name",))
+OPEN_FOLDER_FAILED = _register("OPEN_FOLDER_FAILED", W, 500)
+
 del E, W, I
 
 

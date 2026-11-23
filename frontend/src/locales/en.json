@@ -47,7 +47,9 @@
     "log_title": "Log for job #{{id}}",
     "log_empty": "The log is empty.",
     "attempt": "Attempt {{count}}",
-    "kind_clip": "Clip framing"
+    "kind_clip": "Clip framing",
+    "kind_render": "Render",
+    "kind_capcut": "CapCut bundle"
   },
   "system": {
     "title": "System status",
@@ -332,9 +334,6 @@
         "audio": "Audio",
         "export": "Export"
       },
-      "later": {
-        "export": "Rendering arrives in a later update."
-      },
       "track": {
         "video": "Video",
         "captions": "Captions",
@@ -442,13 +441,78 @@
       "isolate_confirm_body": "Voice Isolator processes {{duration}} of audio and uses about {{credits}} credits.",
       "isolate_on_note": "The preview plays the cleaned voice instead of the original audio.",
       "duck_active": "The original audio is lowered while the voiceover plays.",
-      "voice_model_rate": "{{rate}} credit per character · up to {{max}} characters"
+      "voice_model_rate": "{{rate}} credit per character · up to {{max}} characters",
+      "render_title": "Render",
+      "render_button": "Render this clip",
+      "render_hint": "Saves your edits, approves the clip and renders it to MP4",
+      "renderer": "Renderer",
+      "renderer_default": "Default ({{name}})",
+      "remotion_hint": "Remotion: exactly what the preview shows, slower",
+      "ffmpeg_hint": "FFmpeg: same framing, faster; captions drawn by libass",
+      "render_progress": "Rendering… {{percent}}",
+      "render_queued": "Waiting in the render queue",
+      "render_done": "Rendered. Download it from the Export page.",
+      "render_failed": "The last render failed.",
+      "go_export": "Open Export",
+      "length_ok": "{{seconds}} s, within the {{max}} s limit"
     },
     "export": {
       "title": "Export",
       "subtitle": "Render clips and export bundles for CapCut.",
       "empty": "Nothing to export yet. Approved clips will appear here.",
-      "action": "Go to Moments"
+      "action": "Go to Moments",
+      "queue": "Render queue",
+      "queue_empty": "Nothing is rendering right now.",
+      "clips": "Clips",
+      "select_all": "Select all",
+      "select": "Select “{{title}}”",
+      "render_all": "Render selected ({{count}})",
+      "render_all_hint": "Render the selected clips one after another",
+      "rerender_title": "Render again?",
+      "rerender_body": "{{count}} of the selected clips already have a render. Rendering again replaces those files.",
+      "rerender_one_body": "This clip already has a render. Rendering again replaces its MP4.",
+      "render": "Render",
+      "rerender": "Render again",
+      "render_hint": "Render this clip to MP4",
+      "queued_toast": "Added to the render queue.",
+      "batch_toast": "{{count}} clip(s) added to the render queue.",
+      "batch_skipped": "{{count}} clip(s) skipped because they are busy.",
+      "done_toast": "Render finished: {{title}}",
+      "failed_toast": "Render failed: {{title}}",
+      "capcut_done_toast": "CapCut bundle ready: {{title}}",
+      "cancel": "Cancel",
+      "cancel_hint": "Stop this job",
+      "cancelled_toast": "Cancelled.",
+      "remaining": "{{time}} left",
+      "estimating": "Estimating time…",
+      "waiting": "Waiting in the queue",
+      "renderer": "Renderer",
+      "encoder": "Encoder",
+      "play": "Play",
+      "download": "Download MP4",
+      "open_folder": "Open folder",
+      "capcut": "Export for CapCut",
+      "capcut_hint": "Build a folder and a zip with the clean video, captions, voiceover and audio",
+      "capcut_building": "Building the CapCut bundle…",
+      "capcut_download": "Download CapCut bundle (.zip)",
+      "import": "Import edited version from CapCut",
+      "import_hint": "Choose the MP4 you exported from CapCut",
+      "importing": "Uploading… {{percent}}",
+      "imported": "Edited in CapCut",
+      "imported_toast": "Edited version imported.",
+      "play_imported": "Play the CapCut version",
+      "download_imported": "Download the CapCut version",
+      "open_editor": "Open in Editor",
+      "not_rendered": "Not rendered yet",
+      "rendered_at": "Rendered {{when}}",
+      "loudness": "{{lufs}} LUFS · peak {{peak}} dBTP",
+      "render_time": "took {{seconds}} s",
+      "ssim": "matches the preview (SSIM {{ssim}})",
+      "untitled": "Untitled clip",
+      "player_title": "{{title}}",
+      "folder_opened": "Folder opened.",
+      "more_files": "More files",
+      "srt": "Download captions (.srt)"
     },
     "settings": {
       "title": "Settings",
@@ -545,7 +609,18 @@
     "VOICE_SCRIPT_EMPTY": "Write a voiceover script first.",
     "VOICE_SCRIPT_TOO_LONG": "The script is too long for this model (max {{max}} characters).",
     "VOICE_NO_VOICE": "Pick a voice first.",
-    "VOICE_AUDIO_MISSING": "The saved voiceover file is missing. Generate it again."
+    "VOICE_AUDIO_MISSING": "The saved voiceover file is missing. Generate it again.",
+    "RENDER_FAILED": "Rendering failed: {{detail}}",
+    "RENDER_REMOTION_FAILED": "Remotion could not render this clip, so the FFmpeg renderer was used instead ({{detail}}).",
+    "RENDER_ENCODER_FALLBACK": "The GPU encoder ({{encoder}}) failed, so the clip was encoded on the CPU instead.",
+    "RENDER_SSIM_LOW": "The render differs from the preview more than expected (SSIM {{ssim}}, expected at least 0.95). Check the video.",
+    "RENDER_LOUDNESS_OFF": "The loudness is {{lufs}} LUFS instead of {{target}} LUFS.",
+    "RENDER_NOT_FOUND": "This clip has not been rendered yet.",
+    "RENDER_BUSY": "This clip is already rendering or exporting.",
+    "CLIP_TOO_LONG": "The clip is {{seconds}} s long, more than this platform's {{max}} s limit.",
+    "EXPORT_FAILED": "Export failed: {{detail}}",
+    "IMPORT_INVALID_FILE": "“{{name}}” is not a video file that can be read.",
+    "OPEN_FOLDER_FAILED": "Could not open the folder."
   },
   "steps": {
     "preflight": "Preflight",
@@ -553,7 +628,14 @@
     "transcribe": "Transcribe",
     "analyze": "Analyze",
     "moments": "Moments",
-    "download": "Download"
+    "download": "Download",
+    "source": "Preparing the source",
+    "audio": "Mixing audio",
+    "video": "Rendering video",
+    "encode": "Encoding",
+    "verify": "Checking the result",
+    "clean": "Rendering the clean video",
+    "bundle": "Packing the bundle"
   },
   "step_state": {
     "pending": "Waiting",
@@ -640,5 +722,22 @@
     "review": "In review",
     "approved": "Approved",
     "rendered": "Rendered"
+  },
+  "renderer": {
+    "remotion": "Remotion",
+    "ffmpeg": "FFmpeg"
+  },
+  "encoder_label": {
+    "nvenc": "NVENC (NVIDIA GPU)",
+    "videotoolbox": "VideoToolbox (Apple)",
+    "cpu": "x264 (CPU)"
+  },
+  "render_state": {
+    "idle": "Not rendered",
+    "queued": "Queued",
+    "running": "Rendering",
+    "done": "Rendered",
+    "error": "Failed",
+    "cancelled": "Cancelled"
   }
 }

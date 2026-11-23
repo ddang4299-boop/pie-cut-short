@@ -334,6 +334,9 @@ export interface AppSettings {
   moments_wanted: [number, number];
   voice_default_id: string;
   voice_model: VoiceModel;
+  renderer: Renderer;
+  output_dir: string;
+  platform_presets: Partial<Record<Platform, Partial<PresetOverride>>>;
   env: {
     llm_provider: string;
     anthropic_configured: boolean;
@@ -499,3 +502,119 @@ export const voiceAudioUrl = (path: string | null) => (path ? apiUrl(`/voice/aud
 /** Voice preview URLs are absolute (ElevenLabs CDN) or backend paths (mock mode). */
 export const voicePreviewUrl = (url: string | null) => (!url ? null : url.startsWith("/") ? apiUrl(url) : url);
 
+// ---------------------------------------------------------------------------
+// Render + export (Phase 6)
+// ---------------------------------------------------------------------------
+export const RENDERERS = ["remotion", "ffmpeg"] as const;
+export type Renderer = (typeof RENDERERS)[number];
+export type TaskState = "idle" | "queued" | "running" | "done" | "error" | "cancelled";
+export type EncoderLabel = "nvenc" | "videotoolbox" | "cpu";
+
+export interface PresetOverride {
+  max_seconds: number;
+  video_bitrate_mbps: number;
+  audio_bitrate_kbps: number;
+  fps: number | null;
+}
+export interface PlatformPreset extends PresetOverride {
+  platform: Platform;
+  safe_zone: { top: number; bottom: number; left: number; right: number };
+}
+export interface RenderPresets {
+  presets: Record<Platform, PlatformPreset>;
+  defaults: Record<Platform, Omit<PlatformPreset, "platform">>;
+  renderers: Renderer[];
+  remotion_available: boolean;
+}
+
+export interface RenderInfo {
+  file: string;
+  renderer: Renderer;
+  encoder: EncoderLabel;
+  encoder_name: string;
+  duration: number;
+  width: number;
+  height: number;
+  fps: number;
+  lufs: number | null;
+  true_peak: number | null;
+  ssim: number[];
+  ssim_min: number | null;
+  warnings: Pick<ApiIssue, "code" | "params">[];
+  render_seconds: number;
+  rendered_at: string;
+}
+
+export interface ExportTask<I = Record<string, unknown>> {
+  state: TaskState;
+  error: ApiIssue | null;
+  info: I | null;
+  job_id: number | null;
+  renderer: Renderer | null;
+  progress: number;
+  step: string | null;
+  started_at: string | null;
+  finished_at: string | null;
+}
+
+export interface OutputFile {
+  name: string;
+  size: number;
+  mtime: number;
+}
+
+export interface ExportClip extends ClipSummary {
+  render: ExportTask<RenderInfo>;
+  capcut: ExportTask<{ files: string[]; voiceover: boolean; zip: string; folder: string }>;
+  out_dir: string;
+  files: Record<"final" | "thumb" | "srt" | "bundle" | "imported", OutputFile | null>;
+  length_warning: { seconds: number; max: number; platform: Platform } | null;
+}
+
+export type OutputKind = keyof ExportClip["files"];
+
+export const getRenderPresets = () => apiGet<RenderPresets>("/render/presets");
+export const getEncoders = () => apiGet<{ encoders: string[]; labels: EncoderLabel[] }>("/render/encoders");
+export const listExports = () => apiGet<ExportClip[]>("/exports");
+export const getExport = (clipId: string) => apiGet<ExportClip>(`/clips/${clipId}/export`);
+export const renderClip = (clipId: string, renderer?: Renderer) =>
+  apiSend<ExportClip>("POST", `/clips/${clipId}/render`, renderer ? { renderer } : {});
+export const renderBatch = (clipIds: string[], renderer?: Renderer) =>
+  apiSend<{ queued: string[]; skipped: (ApiIssue & { clip_id: string })[] }>("POST", "/renders/batch", { clip_ids: clipIds, renderer });
+export const cancelRender = (clipId: string) => apiSend<ExportClip>("POST", `/clips/${clipId}/render/cancel`);
+export const exportCapcut = (clipId: string) => apiSend<ExportClip>("POST", `/clips/${clipId}/capcut`);
+export const openClipFolder = (clipId: string) => apiSend<{ ok: boolean; path: string }>("POST", `/clips/${clipId}/open-folder`);
+/** URL of a rendered file; `version` busts the browser cache after a re-render. */
+export const outputUrl = (clipId: string, kind: OutputKind, opts: { download?: boolean; version?: number } = {}) =>
+  apiUrl(`/clips/${clipId}/render/file?kind=${kind}${opts.download ? "&download=true" : ""}${opts.version ? `&v=${opts.version}` : ""}`);
+
+/** Upload an MP4 edited in CapCut (raw body) with progress. */
+export function importEdited(clipId: string, file: File, onProgress: (fraction: number) => void): Promise<ExportClip> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_BASE}/clips/${clipId}/import?name=${encodeURIComponent(file.name)}`);
+    xhr.setRequestHeader("Content-Type", "application/octet-stream");
+    xhr.upload.onprogress = (e) => onProgress(e.lengthComputable ? e.loaded / e.total : 0);
+    xhr.onload = () => {
+      let body: unknown = null;
+      try {
+        body = JSON.parse(xhr.responseText);
+      } catch {
+        /* not JSON */
+      }
+      if (xhr.status >= 200 && xhr.status < 300) resolve(body as ExportClip);
+      else if (isIssue(body)) reject(new ApiError({ code: body.code, severity: body.severity ?? "error", params: body.params ?? {} }, xhr.status));
+      else reject(new ApiError({ code: "UPLOAD_FAILED", severity: "error", params: {} }, xhr.status));
+    };
+    xhr.onerror = () => reject(unreachable());
+    xhr.send(file);
+  });
+}
+
+/** Seconds left from elapsed time and progress (null until there is enough signal). */
+export function remainingSeconds(startedAt: string | null, progress: number, now = Date.now()): number | null {
+  if (!startedAt || progress < 0.03 || progress >= 1) return null;
+  const elapsed = (now - new Date(startedAt).getTime()) / 1000;
+  if (!Number.isFinite(elapsed) || elapsed < 3) return null;
+  return Math.max(0, (elapsed * (1 - progress)) / progress);
+}

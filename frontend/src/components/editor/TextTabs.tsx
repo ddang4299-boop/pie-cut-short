@@ -1,7 +1,7 @@
 import { Short } from "@composition/Short";
 import { Player } from "@remotion/player";
 import { Download, Replace } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { CAPTION_STYLES, PLATFORMS, clipSrtUrl, type Edl, type Platform } from "../../lib/api";
@@ -392,10 +392,12 @@ export function ExportTab({
   edl,
   onProgress,
   onPlatform,
+  render,
 }: {
   edl: Edl;
   onProgress: (p: Edl["progress_bar"]) => void;
   onPlatform: (p: Platform) => void;
+  render?: ReactNode;
 }) {
   const { t } = useTranslation();
   const p = edl.progress_bar;
@@ -445,7 +447,7 @@ export function ExportTab({
           </span>
         </Row>
       </Section>
-      <div className="p-4 text-xs text-muted">{t("pages.editor.later.export")}</div>
+      {render}
     </div>
   );
 }

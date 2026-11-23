@@ -47,7 +47,9 @@
     "log_title": "Nhật ký tác vụ #{{id}}",
     "log_empty": "Nhật ký đang trống.",
     "attempt": "Lần chạy thứ {{count}}",
-    "kind_clip": "Căn khung clip"
+    "kind_clip": "Căn khung clip",
+    "kind_render": "Kết xuất video",
+    "kind_capcut": "Gói CapCut"
   },
   "system": {
     "title": "Trạng thái hệ thống",
@@ -332,9 +334,6 @@
         "audio": "Âm thanh",
         "export": "Xuất"
       },
-      "later": {
-        "export": "Tính năng render có trong bản cập nhật sau."
-      },
       "track": {
         "video": "Video",
         "captions": "Phụ đề",
@@ -442,13 +441,78 @@
       "isolate_confirm_body": "Tính năng tách giọng nói xử lý {{duration}} âm thanh và tốn khoảng {{credits}} credit.",
       "isolate_on_note": "Bản xem trước phát giọng đã tách thay cho âm thanh gốc.",
       "duck_active": "Âm thanh gốc được giảm nhỏ khi lồng tiếng phát.",
-      "voice_model_rate": "{{rate}} credit mỗi ký tự · tối đa {{max}} ký tự"
+      "voice_model_rate": "{{rate}} credit mỗi ký tự · tối đa {{max}} ký tự",
+      "render_title": "Kết xuất",
+      "render_button": "Kết xuất clip này",
+      "render_hint": "Lưu chỉnh sửa, duyệt clip và kết xuất ra MP4",
+      "renderer": "Bộ kết xuất",
+      "renderer_default": "Mặc định ({{name}})",
+      "remotion_hint": "Remotion: giống hệt bản xem trước, chậm hơn",
+      "ffmpeg_hint": "FFmpeg: cùng khung hình, nhanh hơn; phụ đề vẽ bằng libass",
+      "render_progress": "Đang kết xuất… {{percent}}",
+      "render_queued": "Đang chờ trong hàng đợi kết xuất",
+      "render_done": "Đã kết xuất. Tải về ở trang Xuất video.",
+      "render_failed": "Lần kết xuất gần nhất bị lỗi.",
+      "go_export": "Mở trang Xuất video",
+      "length_ok": "{{seconds}} giây, trong giới hạn {{max}} giây"
     },
     "export": {
       "title": "Xuất video",
       "subtitle": "Kết xuất clip và xuất gói để hoàn thiện trong CapCut.",
       "empty": "Chưa có gì để xuất. Các clip đã duyệt sẽ hiện ở đây.",
-      "action": "Đến Khoảnh khắc"
+      "action": "Đến Khoảnh khắc",
+      "queue": "Hàng đợi kết xuất",
+      "queue_empty": "Hiện không có clip nào đang kết xuất.",
+      "clips": "Danh sách clip",
+      "select_all": "Chọn tất cả",
+      "select": "Chọn “{{title}}”",
+      "render_all": "Kết xuất mục đã chọn ({{count}})",
+      "render_all_hint": "Lần lượt kết xuất các clip đã chọn",
+      "rerender_title": "Kết xuất lại?",
+      "rerender_body": "{{count}} clip trong số đã chọn đã có bản kết xuất. Kết xuất lại sẽ thay thế các tệp đó.",
+      "rerender_one_body": "Clip này đã có bản kết xuất. Kết xuất lại sẽ thay thế tệp MP4 của nó.",
+      "render": "Kết xuất",
+      "rerender": "Kết xuất lại",
+      "render_hint": "Kết xuất clip này ra MP4",
+      "queued_toast": "Đã thêm vào hàng đợi kết xuất.",
+      "batch_toast": "Đã thêm {{count}} clip vào hàng đợi kết xuất.",
+      "batch_skipped": "Bỏ qua {{count}} clip vì đang bận.",
+      "done_toast": "Đã kết xuất xong: {{title}}",
+      "failed_toast": "Kết xuất thất bại: {{title}}",
+      "capcut_done_toast": "Gói CapCut đã sẵn sàng: {{title}}",
+      "cancel": "Huỷ",
+      "cancel_hint": "Dừng tác vụ này",
+      "cancelled_toast": "Đã huỷ.",
+      "remaining": "còn {{time}}",
+      "estimating": "Đang ước tính thời gian…",
+      "waiting": "Đang chờ trong hàng đợi",
+      "renderer": "Bộ kết xuất",
+      "encoder": "Bộ mã hoá",
+      "play": "Phát",
+      "download": "Tải MP4",
+      "open_folder": "Mở thư mục",
+      "capcut": "Xuất cho CapCut",
+      "capcut_hint": "Tạo thư mục và tệp zip gồm video sạch, phụ đề, lời thoại và âm thanh",
+      "capcut_building": "Đang tạo gói CapCut…",
+      "capcut_download": "Tải gói CapCut (.zip)",
+      "import": "Nhập bản đã chỉnh từ CapCut",
+      "import_hint": "Chọn tệp MP4 bạn đã xuất từ CapCut",
+      "importing": "Đang tải lên… {{percent}}",
+      "imported": "Đã chỉnh trong CapCut",
+      "imported_toast": "Đã nhập bản đã chỉnh.",
+      "play_imported": "Phát bản CapCut",
+      "download_imported": "Tải bản CapCut",
+      "open_editor": "Mở trong Biên tập",
+      "not_rendered": "Chưa kết xuất",
+      "rendered_at": "Kết xuất lúc {{when}}",
+      "loudness": "{{lufs}} LUFS · đỉnh {{peak}} dBTP",
+      "render_time": "mất {{seconds}} giây",
+      "ssim": "khớp bản xem trước (SSIM {{ssim}})",
+      "untitled": "Clip chưa đặt tên",
+      "player_title": "{{title}}",
+      "folder_opened": "Đã mở thư mục.",
+      "more_files": "Tệp khác",
+      "srt": "Tải phụ đề (.srt)"
     },
     "settings": {
       "title": "Cài đặt",
@@ -545,7 +609,18 @@
     "VOICE_SCRIPT_EMPTY": "Hãy viết kịch bản lồng tiếng trước.",
     "VOICE_SCRIPT_TOO_LONG": "Kịch bản quá dài cho mô hình này (tối đa {{max}} ký tự).",
     "VOICE_NO_VOICE": "Hãy chọn một giọng trước.",
-    "VOICE_AUDIO_MISSING": "Không tìm thấy tệp lồng tiếng đã lưu. Hãy tạo lại."
+    "VOICE_AUDIO_MISSING": "Không tìm thấy tệp lồng tiếng đã lưu. Hãy tạo lại.",
+    "RENDER_FAILED": "Kết xuất thất bại: {{detail}}",
+    "RENDER_REMOTION_FAILED": "Remotion không kết xuất được clip này nên đã chuyển sang bộ kết xuất FFmpeg ({{detail}}).",
+    "RENDER_ENCODER_FALLBACK": "Bộ mã hoá GPU ({{encoder}}) bị lỗi nên clip đã được mã hoá bằng CPU.",
+    "RENDER_SSIM_LOW": "Bản kết xuất khác bản xem trước nhiều hơn dự kiến (SSIM {{ssim}}, cần ít nhất 0,95). Hãy kiểm tra lại video.",
+    "RENDER_LOUDNESS_OFF": "Độ lớn âm thanh là {{lufs}} LUFS thay vì {{target}} LUFS.",
+    "RENDER_NOT_FOUND": "Clip này chưa được kết xuất.",
+    "RENDER_BUSY": "Clip này đang được kết xuất hoặc đóng gói.",
+    "CLIP_TOO_LONG": "Clip dài {{seconds}} giây, vượt giới hạn {{max}} giây của nền tảng này.",
+    "EXPORT_FAILED": "Xuất gói thất bại: {{detail}}",
+    "IMPORT_INVALID_FILE": "“{{name}}” không phải tệp video đọc được.",
+    "OPEN_FOLDER_FAILED": "Không mở được thư mục."
   },
   "steps": {
     "preflight": "Kiểm tra",
@@ -553,7 +628,14 @@
     "transcribe": "Chép lời",
     "analyze": "Phân tích",
     "moments": "Khoảnh khắc",
-    "download": "Tải về"
+    "download": "Tải về",
+    "source": "Đang chuẩn bị nguồn",
+    "audio": "Đang trộn âm thanh",
+    "video": "Đang kết xuất hình",
+    "encode": "Đang mã hoá",
+    "verify": "Đang kiểm tra kết quả",
+    "clean": "Đang kết xuất video sạch",
+    "bundle": "Đang đóng gói"
   },
   "step_state": {
     "pending": "Đang chờ",
@@ -639,6 +721,23 @@
     "draft": "Nháp",
     "review": "Đang xem lại",
     "approved": "Đã duyệt",
-    "rendered": "Đã render"
+    "rendered": "Đã kết xuất"
+  },
+  "renderer": {
+    "remotion": "Remotion",
+    "ffmpeg": "FFmpeg"
+  },
+  "encoder_label": {
+    "nvenc": "NVENC (GPU NVIDIA)",
+    "videotoolbox": "VideoToolbox (Apple)",
+    "cpu": "x264 (CPU)"
+  },
+  "render_state": {
+    "idle": "Chưa kết xuất",
+    "queued": "Đang chờ",
+    "running": "Đang kết xuất",
+    "done": "Đã kết xuất",
+    "error": "Thất bại",
+    "cancelled": "Đã huỷ"
   }
 }

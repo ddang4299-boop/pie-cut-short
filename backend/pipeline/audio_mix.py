@@ -189,7 +189,38 @@ def normalize(src: Path, dst: Path, *, target: float = -14.0, ffmpeg: str = "ffm
     run_ffmpeg([ffmpeg, "-y", "-nostdin", "-v", "error", "-nostats", "-progress", "pipe:1", "-i", str(src),
                 "-af", af, "-ar", str(SAMPLE_RATE), "-ac", "2", "-c:a", "pcm_s16le", str(dst)],
                log=log, on_process=on_process)
-    return {"measured": measured, "silent": silent}
+    result: dict[str, Any] = {"measured": measured, "silent": silent}
+    if not silent:
+        result["corrected"] = _correct(dst, target, ffmpeg=ffmpeg, log=log, on_process=on_process)
+    return result
+
+
+CORRECT_TOLERANCE = 0.4  # LU
+
+
+def correction_filter(gain_db: float) -> str:
+    """Gain + a limiter run at 4x the sample rate (approximates a true-peak limit at TRUE_PEAK)."""
+    limit = 10 ** ((TRUE_PEAK - 0.3) / 20)
+    return (f"volume={gain_db:.2f}dB,aresample={SAMPLE_RATE * 4},"
+            f"alimiter=limit={limit:.4f}:attack=2:release=60:level=disabled,aresample={SAMPLE_RATE}")
+
+
+def _correct(path: Path, target: float, *, ffmpeg: str, log: LogFn | None, on_process: ProcessFn | None) -> float | None:
+    """When loudnorm could not reach the target (it switches to dynamic mode when the linear gain
+    would exceed the true-peak limit, and then lands ~1 LU low), apply the remaining gain with a
+    limiter. Returns the gain applied (dB) or None."""
+    got = measure(path, ffmpeg=ffmpeg, on_process=on_process).get("lufs")
+    if got is None or abs(got - target) <= CORRECT_TOLERANCE:
+        return None
+    gain = target - got
+    tmp = path.with_name(path.stem + "_corr.wav")
+    run_ffmpeg([ffmpeg, "-y", "-nostdin", "-v", "error", "-nostats", "-progress", "pipe:1", "-i", str(path),
+                "-af", correction_filter(gain), "-ar", str(SAMPLE_RATE), "-ac", "2", "-c:a", "pcm_s16le", str(tmp)],
+               log=log, on_process=on_process)
+    tmp.replace(path)
+    if log:
+        log(f"loudness correction: {got:.1f} LUFS -> +{gain:.2f} dB with limiter")
+    return round(gain, 2)
 
 
 def measure(path: Path, *, ffmpeg: str = "ffmpeg", on_process: ProcessFn | None = None) -> dict[str, float | None]:
