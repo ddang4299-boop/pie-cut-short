@@ -136,6 +136,10 @@ EXPORT_FAILED = _register("EXPORT_FAILED", E, 500, ("detail",))
 IMPORT_INVALID_FILE = _register("IMPORT_INVALID_FILE", E, 400, ("name",))
 OPEN_FOLDER_FAILED = _register("OPEN_FOLDER_FAILED", W, 500)
 
+# --- Polish (Phase 7) ---------------------------------------------------------
+CHANNEL_NOT_FOUND = _register("CHANNEL_NOT_FOUND", E, 404)
+CACHE_CLEAR_FAILED = _register("CACHE_CLEAR_FAILED", W, 500, ("detail",))
+
 del E, W, I
 
 

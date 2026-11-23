@@ -163,7 +163,7 @@ def run_source_preflight(source_id: str) -> Source:
         raise errors.AppError(errors.FILE_NOT_FOUND, name=src.name)
     media = Path(src.media_path)
     set_step(source_id, "preflight", state="running", progress=0.0, error=None)
-    result = preflight.run_preflight(media, settings.data_path, settings.ffmpeg_bin, settings.ffprobe_bin, settings.device)
+    result = preflight.run_preflight(media, settings.data_path, settings.ffmpeg_bin, settings.ffprobe_bin, effective_device())
     fields: dict[str, Any] = {"preflight": result}
     probe = result.get("probe") or {}
     if probe:
@@ -224,7 +224,7 @@ def step_proxy(ctx: JobContext, src: Source, report: StepReporter) -> str:
 
     if not src.width or not src.height or not src.media_path:
         raise errors.AppError(errors.PROXY_FAILED)
-    device = preflight.detect_device(settings.device)
+    device = preflight.detect_device(effective_device())
     encoder = preflight.detect_encoder(preflight.tool_info(settings.ffmpeg_bin), device)
     report(0.0, stage="encoding")
     try:
@@ -261,9 +261,28 @@ def transcript_path(source_id: str) -> Path:
     return source_dir(source_id) / "transcript.json"
 
 
+def effective_device() -> str:
+    """Settings page choice, else DEVICE from .env."""
+    from app import settings_store
+
+    try:
+        return settings_store.get("device") or get_settings().device
+    except Exception:  # noqa: BLE001 - no DB yet (CLI tools)
+        return get_settings().device
+
+
+def effective_whisper_model() -> str:
+    from app import settings_store
+
+    try:
+        return settings_store.get("whisper_model") or get_settings().whisper_model
+    except Exception:  # noqa: BLE001
+        return get_settings().whisper_model
+
+
 def whisper_device() -> str:
     """ctranslate2 supports CUDA or CPU (no Apple MPS)."""
-    return "cuda" if preflight.detect_device(get_settings().device) == "cuda" else "cpu"
+    return "cuda" if preflight.detect_device(effective_device()) == "cuda" else "cpu"
 
 
 def run_transcriber(
@@ -387,7 +406,7 @@ def step_transcribe(ctx: JobContext, src: Source, report: StepReporter) -> str:
         report.notice(errors.TRANSCRIBE_SKIPPED_NO_AUDIO)
         return "skipped"
     option = src.language_override if src.language_override in transcribe.LANGUAGE_OPTIONS else "auto"
-    model = settings.whisper_model
+    model = effective_whisper_model()
     key = transcribe.cache_key(src.file_hash or src.id, model, option)
     cache_dir = transcripts_cache_dir()
     cache_dir.mkdir(parents=True, exist_ok=True)

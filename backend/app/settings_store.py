@@ -33,8 +33,13 @@ DEFAULTS: dict[str, Any] = {
     "renderer": "remotion",  # remotion | ffmpeg
     "platform_presets": {},  # per-platform overrides of pipeline.presets.DEFAULT_PRESETS
     "output_dir": "",  # "" = <data>/output
+    "whisper_model": None,  # None = WHISPER_MODEL from .env
+    "device": None,  # None = DEVICE from .env (auto | cuda | mps | cpu)
+    "channels": [],  # per-channel presets, see app/channels.py
 }
 RENDERERS = ("remotion", "ffmpeg")
+WHISPER_MODELS = ("tiny", "base", "small", "medium", "large-v3", "large-v3-turbo")
+DEVICES = ("auto", "cuda", "mps", "cpu")
 
 
 def _validate(key: str, value: Any) -> Any:
@@ -55,6 +60,14 @@ def _validate(key: str, value: Any) -> Any:
         raise bad
     if key == "renderer" and value not in RENDERERS:
         raise bad
+    if key == "whisper_model" and value is not None and value not in WHISPER_MODELS:
+        raise bad
+    if key == "device" and value is not None and value not in DEVICES:
+        raise bad
+    if key == "channels":
+        from app import channels
+
+        value = channels.validate_list(value)
     if key == "output_dir" and not (isinstance(value, str) and len(value) <= 500):
         raise bad
     if key == "platform_presets":

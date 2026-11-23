@@ -20,7 +20,8 @@ from pydantic import BaseModel, Field
 from sqlmodel import col, select
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app import clips_service, db, errors, jobs, moments_service, render_service, settings_store, tasks, voice_service
+from app import (cache_service, channels, clips_service, db, errors, jobs, moments_service, render_service,
+                 settings_store, tasks, voice_service)
 from app.config import APP_VERSION, get_settings
 from app.models import (
     JOB_ACTIVE,
@@ -116,7 +117,7 @@ async def _unexpected_error(_: Request, exc: Exception) -> JSONResponse:
 @lru_cache(maxsize=1)
 def _cached_system_info() -> dict[str, Any]:
     s = get_settings()
-    return preflight.system_info(s.ffmpeg_bin, s.ffprobe_bin, s.device)
+    return preflight.system_info(s.ffmpeg_bin, s.ffprobe_bin, tasks.effective_device())
 
 
 @app.get("/health")
@@ -586,6 +587,38 @@ def patch_moment(moment_id: int, body: MomentPatch) -> dict[str, Any]:
     return moment
 
 
+class MomentBatchBody(BaseModel):
+    ids: list[int] = Field(min_length=1, max_length=500)
+    status: str
+    channel_id: str | None = None  # applied to the clips of approved moments
+
+
+@app.post("/sources/{source_id}/moments/batch")
+def batch_moments(source_id: str, body: MomentBatchBody) -> dict[str, Any]:
+    """Approve / reject many moments at once (the Moments list's multi-select)."""
+    tasks.load_source(source_id)
+    if body.status not in ("approved", "rejected", "proposed"):
+        raise errors.AppError(errors.VALIDATION_ERROR, fields="status")
+    channel = channels.find(body.channel_id) if body.channel_id else None
+    own = {m["id"] for m in moments_service.list_moments(source_id)}
+    changes: dict[str, Any] = {"status": body.status}
+    if channel and body.status == "approved":
+        changes.update(caption_style=channel["caption_style"], platform=channel["platform"])
+    updated, skipped = [], []
+    for mid in body.ids:
+        if mid not in own:
+            skipped.append(mid)
+            continue
+        moment = moments_service.update_moment(mid, changes, snap_bounds=False)
+        if moment["status"] == "approved":
+            clip = clips_service.ensure_clip(moment)
+            if channel:
+                channels.apply_to_clip(clip["id"], channel["id"])
+        clips_service.sync_moment(moment)
+        updated.append(mid)
+    return {"updated": updated, "skipped": skipped, "moments": moments_service.list_moments(source_id)}
+
+
 @app.delete("/moments/{moment_id}")
 def remove_moment(moment_id: int) -> dict[str, Any]:
     moments_service.delete_moment(moment_id)
@@ -731,6 +764,29 @@ def isolate_voice(clip_id: str, body: ConfirmBody | None = None) -> dict[str, An
     return voice_service.isolate(clip_id, confirm=(body or ConfirmBody()).confirm)
 
 
+class ChannelBody(BaseModel):
+    channel_id: str = Field(min_length=1, max_length=40)
+
+
+@app.post("/clips/{clip_id}/channel")
+def apply_channel(clip_id: str, body: ChannelBody) -> dict[str, Any]:
+    return channels.apply_to_clip(clip_id, body.channel_id)
+
+
+@app.get("/cache")
+def cache_summary() -> dict[str, Any]:
+    return cache_service.summary()
+
+
+class CacheClearBody(BaseModel):
+    keys: list[str] | None = None  # None = every clearable item
+
+
+@app.post("/cache/clear")
+def cache_clear(body: CacheClearBody | None = None) -> dict[str, Any]:
+    return cache_service.clear((body or CacheClearBody()).keys)
+
+
 # --------------------------------------------------------------------------
 # Render + export
 # --------------------------------------------------------------------------
@@ -848,6 +904,9 @@ def get_app_settings() -> dict[str, Any]:
             "elevenlabs_mock": s.elevenlabs_mock,
         },
         "effective_llm_provider": tasks.selected_provider(),
+        "effective": {"whisper_model": tasks.effective_whisper_model(), "device": tasks.effective_device(),
+                      "env_whisper_model": s.whisper_model, "env_device": s.device},
+        "choices": {"whisper_models": list(settings_store.WHISPER_MODELS), "devices": list(settings_store.DEVICES)},
     }
 
 
@@ -856,6 +915,8 @@ def patch_app_settings(body: dict[str, Any]) -> dict[str, Any]:
     body.pop("env", None)
     body.pop("effective_llm_provider", None)
     settings_store.update(body)
+    if "device" in body:
+        _cached_system_info.cache_clear()
     if "rubric_weights" in body:
         moments_service.rescore_all()
     return get_app_settings()
