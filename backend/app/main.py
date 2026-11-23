@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 from sqlmodel import col, select
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app import clips_service, db, errors, jobs, moments_service, settings_store, tasks
+from app import clips_service, db, errors, jobs, moments_service, settings_store, tasks, voice_service
 from app.config import APP_VERSION, get_settings
 from app.models import (
     JOB_ACTIVE,
@@ -657,6 +657,80 @@ def snap_range(source_id: str, body: SnapBody) -> dict[str, float]:
 
 
 # --------------------------------------------------------------------------
+# Voice (ElevenLabs). Nothing here spends credits without `confirm: true`.
+# --------------------------------------------------------------------------
+class VoiceSettingsBody(BaseModel):
+    stability: float | None = Field(default=None, ge=0, le=1)
+    similarity_boost: float | None = Field(default=None, ge=0, le=1)
+    style: float | None = Field(default=None, ge=0, le=1)
+    speed: float | None = Field(default=None, ge=0.7, le=1.2)
+
+
+class VoiceoverBody(BaseModel):
+    script: str | None = Field(default=None, max_length=20000)
+    voice_id: str | None = Field(default=None, max_length=100)
+    model_id: str | None = None
+    settings: VoiceSettingsBody | None = None
+    confirm: bool = False  # the user accepted the credit estimate
+
+    def request(self) -> dict[str, Any]:
+        data = self.model_dump(exclude={"confirm"}, exclude_none=True)
+        if self.settings:
+            data["settings"] = self.settings.model_dump(exclude_none=True)
+        return data
+
+
+class ConfirmBody(BaseModel):
+    confirm: bool = False
+
+
+@app.get("/voice/status")
+def voice_status(refresh: bool = False) -> dict[str, Any]:
+    return voice_service.status(refresh)
+
+
+@app.get("/voice/voices")
+def voice_list(refresh: bool = False) -> list[dict[str, Any]]:
+    return voice_service.voices(refresh)
+
+
+@app.get("/voice/mock-preview/{voice_id}.mp3")
+def voice_mock_preview(voice_id: str) -> FileResponse:
+    return FileResponse(voice_service.mock_preview(voice_id), media_type="audio/mpeg")
+
+
+@app.get("/voice/audio/{name}")
+def voice_audio(name: str) -> FileResponse:
+    """Generated voiceover / isolated audio (only files of the voice cache)."""
+    return FileResponse(voice_service.audio_file(name), media_type="audio/mpeg", headers={"Cache-Control": "max-age=31536000, immutable"})
+
+
+@app.post("/clips/{clip_id}/voiceover/estimate")
+def voiceover_estimate(clip_id: str, body: VoiceoverBody) -> dict[str, Any]:
+    return voice_service.estimate_tts(clip_id, body.request())
+
+
+@app.post("/clips/{clip_id}/voiceover")
+def voiceover_generate(clip_id: str, body: VoiceoverBody) -> dict[str, Any]:
+    return voice_service.generate(clip_id, body.request(), confirm=body.confirm)
+
+
+@app.post("/clips/{clip_id}/voiceover/suggest")
+def voiceover_suggest(clip_id: str) -> dict[str, Any]:
+    return voice_service.suggest(clip_id)
+
+
+@app.get("/clips/{clip_id}/isolate/estimate")
+def isolate_estimate(clip_id: str) -> dict[str, Any]:
+    return voice_service.estimate_isolation(clip_id)
+
+
+@app.post("/clips/{clip_id}/isolate")
+def isolate_voice(clip_id: str, body: ConfirmBody | None = None) -> dict[str, Any]:
+    return voice_service.isolate(clip_id, confirm=(body or ConfirmBody()).confirm)
+
+
+# --------------------------------------------------------------------------
 # Settings
 # --------------------------------------------------------------------------
 @app.get("/settings")
@@ -670,6 +744,8 @@ def get_app_settings() -> dict[str, Any]:
             "openai_configured": bool(s.openai_api_key),
             "ollama_host": s.ollama_host,
             "ollama_model": s.ollama_model,
+            "elevenlabs_configured": bool(s.elevenlabs_api_key),
+            "elevenlabs_mock": s.elevenlabs_mock,
         },
         "effective_llm_provider": tasks.selected_provider(),
     }

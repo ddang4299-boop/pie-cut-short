@@ -108,6 +108,21 @@ CLIP_BUSY = _register("CLIP_BUSY", E, 409)
 PREPARE_FAILED = _register("PREPARE_FAILED", E, 500, ("detail",))
 REFRAME_FAILED = _register("REFRAME_FAILED", E, 500, ("detail",))
 
+# --- Voice / ElevenLabs (Phase 5) ------------------------------------------
+VOICE_NOT_CONFIGURED = _register("VOICE_NOT_CONFIGURED", W, 400)
+VOICE_INVALID_KEY = _register("VOICE_INVALID_KEY", E, 400)
+VOICE_QUOTA_EXCEEDED = _register("VOICE_QUOTA_EXCEEDED", E, 402)
+VOICE_PERMISSION = _register("VOICE_PERMISSION", E, 403)
+VOICE_RATE_LIMITED = _register("VOICE_RATE_LIMITED", W, 429)
+VOICE_OFFLINE = _register("VOICE_OFFLINE", E, 503)
+VOICE_NOT_FOUND = _register("VOICE_NOT_FOUND", E, 404)
+VOICE_FAILED = _register("VOICE_FAILED", E, 502, ("detail",))
+VOICE_CONFIRM_REQUIRED = _register("VOICE_CONFIRM_REQUIRED", I, 409, ("characters", "credits"))
+VOICE_SCRIPT_EMPTY = _register("VOICE_SCRIPT_EMPTY", E, 400)
+VOICE_SCRIPT_TOO_LONG = _register("VOICE_SCRIPT_TOO_LONG", E, 400, ("max",))
+VOICE_NO_VOICE = _register("VOICE_NO_VOICE", E, 400)
+VOICE_AUDIO_MISSING = _register("VOICE_AUDIO_MISSING", E, 404)
+
 del E, W, I
 
 

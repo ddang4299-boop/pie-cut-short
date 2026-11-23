@@ -14,6 +14,7 @@ from sqlmodel import select
 from app import db, errors
 from app.models import CAPTION_STYLES, PLATFORMS, AppSetting
 
+from pipeline.voice import MODELS as VOICE_MODELS
 from pipeline.moments import DEFAULT_WEIGHTS, PROVIDERS as LLM_PROVIDERS, RUBRIC
 
 UI_LANGUAGES = ("en", "vi")
@@ -27,6 +28,8 @@ DEFAULTS: dict[str, Any] = {
     "clip_min": 15,
     "clip_max": 60,
     "moments_wanted": [8, 12],
+    "voice_default_id": "",
+    "voice_model": "eleven_flash_v2_5",
 }
 
 
@@ -41,6 +44,10 @@ def _validate(key: str, value: Any) -> Any:
     if key == "default_platform" and value not in PLATFORMS:
         raise bad
     if key == "default_caption_style" and value not in CAPTION_STYLES:
+        raise bad
+    if key == "voice_default_id" and not (isinstance(value, str) and len(value) <= 100):
+        raise bad
+    if key == "voice_model" and value not in VOICE_MODELS:
         raise bad
     if key == "rubric_weights":
         if not isinstance(value, dict) or set(value) != set(RUBRIC):

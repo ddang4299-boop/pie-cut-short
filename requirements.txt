@@ -27,6 +27,9 @@ opencv-contrib-python>=5.1  # frames, motion, Haar fallback (same package mediap
 # --- Moment selection LLMs (optional providers) ---
 anthropic>=2.12             # provider "anthropic" (official SDK); openai/ollama use plain HTTP
 
+# --- Voice (Phase 5) ---
+elevenlabs>=2.79,<3         # TTS + Voice Isolator (official SDK); optional: without a key the app still works
+
 # --- Tests ---
 pytest>=9.2
 httpx2>=2.16  # used by FastAPI's TestClient

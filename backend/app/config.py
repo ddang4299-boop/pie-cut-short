@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     )
 
     elevenlabs_api_key: str = ""
+    elevenlabs_mock: bool = False  # ELEVENLABS_MOCK=1: offline fake client (tones), never calls the API
     llm_provider: str = "claude_code"
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-opus-5-5"

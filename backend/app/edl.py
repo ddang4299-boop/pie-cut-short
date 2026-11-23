@@ -22,6 +22,9 @@ CLIP_STATUSES = ("draft", "review", "approved", "rendered")
 MIN_SEGMENT = 0.2
 MAX_KEYFRAMES = 2000
 HEX_COLOR = re.compile(r"^#[0-9A-Fa-f]{6}$")
+# generated audio lives in data/voice_cache; the EDL may only point there (served by the API)
+VOICE_PATH = re.compile(r"^voice_cache/(tts|iso)_[0-9a-f]{32}\.mp3$")
+VOICE_MODELS = ("eleven_flash_v2_5", "eleven_v3", "eleven_multilingual_v2")
 
 
 class _Model(BaseModel):
@@ -120,19 +123,45 @@ class ProgressBar(_Model):
         return v.upper()
 
 
+def _voice_path(v: str | None) -> str | None:
+    if v in (None, ""):
+        return None
+    if not VOICE_PATH.match(v):
+        raise ValueError("audio path must be a voice_cache file")
+    return v
+
+
+class VoiceSettings(_Model):
+    stability: float = Field(default=0.5, ge=0, le=1)
+    similarity_boost: float = Field(default=0.75, ge=0, le=1)
+    style: float = Field(default=0.0, ge=0, le=1)
+    speed: float = Field(default=1.0, ge=0.7, le=1.2)
+
+
 class Voiceover(_Model):
     enabled: bool = False
     script: str = Field(default="", max_length=5000)
-    voice_id: str = ""
-    audio_path: str | None = None
-    start: float = Field(default=0.0, ge=0)
+    voice_id: str = Field(default="", max_length=100)
+    model_id: Literal["eleven_flash_v2_5", "eleven_v3", "eleven_multilingual_v2"] = "eleven_flash_v2_5"
+    settings: VoiceSettings = Field(default_factory=VoiceSettings)
+    audio_path: str | None = None  # voice_cache/tts_<hash>.mp3, set by the API after generation
+    duration: float | None = Field(default=None, ge=0)
+    start: float = Field(default=0.0, ge=0)  # clip time
+    volume_db: float = Field(default=0.0, ge=-30, le=12)
     duck_db: float = Field(default=-12.0, ge=-40, le=0)
+
+    _path = field_validator("audio_path")(classmethod(lambda cls, v: _voice_path(v)))
 
 
 class Audio(_Model):
     normalize_lufs: float = Field(default=-14.0, ge=-30, le=-6)
     isolate_voice: bool = False
     volume_db: float = Field(default=0.0, ge=-30, le=12)
+    # Voice Isolator output for the source range [isolated_start, isolated_start + its duration]
+    isolated_path: str | None = None
+    isolated_start: float = Field(default=0.0, ge=0)
+
+    _path = field_validator("isolated_path")(classmethod(lambda cls, v: _voice_path(v)))
 
 
 class Output(_Model):
