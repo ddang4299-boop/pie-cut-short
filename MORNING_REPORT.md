@@ -241,3 +241,36 @@ Bỏ qua: không có thư mục `vendor/claude-shorts`. Nếu muốn dùng lại
 
 **Lưu ý**
 - Chưa làm ElevenLabs Scribe (chuyển giọng nói thành chữ) vì không bắt buộc; faster-whisper đã chạy tốt và miễn phí.
+
+## Phase 6 — Render + Export + CapCut ⚠️ PARTIAL
+
+**Đã làm được**
+- **Kết xuất (render)** 1080×1920 theo EDL, hai cách:
+  - **Remotion** (mặc định): phụ đề karaoke, hiệu ứng lò xo, hook, thanh tiến trình, giống hệt bản xem trước.
+  - **FFmpeg + ASS** (nhanh hơn, dự phòng): nếu Remotion lỗi thì tự chuyển sang FFmpeg và ghi cảnh báo.
+- **Bộ mã hoá**: NVENC / VideoToolbox nếu có, không thì libx264. GPU lỗi thì tự chuyển sang libx264 kèm cảnh báo.
+- **Âm thanh**: trộn âm gốc + lồng tiếng + ducking giống bản xem trước, chuẩn hoá về **−14 LUFS** (2 lượt loudnorm + một lượt chỉnh bù nếu lệch > 0,4 LU), true peak ≤ −1,5 dBTP.
+- **Tự kiểm tra sau mỗi lần render**: so 3 khung hình với video gốc (SSIM ≥ 0,95) và đo lại độ to. Nếu lệch thì hiện cảnh báo, video vẫn được giữ.
+- **Preset nền tảng** (YouTube Shorts / TikTok / Reels): bitrate, độ dài tối đa. Clip quá dài thì cảnh báo ngay trong trình chỉnh sửa và sau khi render.
+- Trình chỉnh sửa → thẻ **Xuất**: chọn bộ render, nút **Render**, tiến độ trực tiếp. Bấm Render nghĩa là duyệt bản chỉnh sửa.
+- Trang **Xuất**:
+  - Hàng đợi có %, thời gian còn lại, bộ render, bộ mã hoá, nút Huỷ.
+  - Danh sách clip: ảnh thu nhỏ, Phát, Tải MP4, Tải SRT, Mở thư mục, chọn nhiều → **Render các clip đã chọn**.
+- **Gói CapCut**: `clip_9x16_clean.mp4` (không phụ đề), `clip_final.mp4`, `captions.srt`, `original_audio.wav`, `voiceover.mp3`, `README.txt` hướng dẫn **tiếng Anh + tiếng Việt**, kèm file zip.
+- **Nhập lại bản đã sửa trong CapCut**: tải file lên, kiểm tra đúng là video rồi mới lưu thành `clip_capcut.mp4`; bản render gốc vẫn giữ.
+- **Dọn dẹp**: thư mục tạm bị xoá sau mỗi lần render (kể cả khi huỷ hoặc lỗi). Mở lại app sau khi tắt giữa chừng thì tác vụ dở được đánh dấu "đã huỷ" và dọn file tạm.
+- Đã sửa lỗi lệch 1 khung hình giữa FFmpeg và Remotion (giờ lệch 0), và lỗi file thiếu nhãn màu BT.709.
+
+**Kiểm thử**
+- pytest backend: **240/240 pass** (thêm 19 bài: preset, trộn âm, loudnorm, bố cục khung hình, bộ mã hoá dự phòng, README CapCut, và 2 bài chạy thật: render → gói CapCut → tải file → nhập bản sửa → render hàng loạt → huỷ → dọn dẹp khi khởi động).
+- Vitest 51/51, `npm run build` pass, kiểm tra khoá en/vi pass.
+- Render thật qua API: một clip 14 s bằng FFmpeg mất khoảng 43 s, đo được **−14,5 LUFS**, true peak −1,6 dBTP, SSIM 0,997–0,998, nhãn màu bt709 đầy đủ.
+
+**Cần bạn làm** (ghi trong `BLOCKED.md`)
+- Phát thử MP4 **trên điện thoại** (màu, âm lượng, vùng an toàn của phụ đề).
+- Mở **gói CapCut** trong CapCut bản máy tính (máy này chưa cài CapCut).
+- **NVENC**: driver NVIDIA hiện là 560.94, cần bản ≥ 610 thì FFmpeg mới dùng được GPU để mã hoá. Hiện app tự dùng CPU (libx264).
+
+**Lưu ý**
+- Remotion chậm hơn mục tiêu trên máy này (clip 18 s mất 74 s, nên clip 45 s mất khoảng 3 phút). Nếu cần nhanh, chọn **FFmpeg (nhanh hơn)** trong Cài đặt hoặc ngay trong thẻ Xuất.
+- **CapCut mức 2** (tạo sẵn project nháp) đã bỏ qua: CapCut chưa cài, và các bản CapCut mới mã hoá file nháp nên thư viện tạo nháp không còn dùng được.

@@ -114,7 +114,9 @@ def video_args(encoder: str, preset: dict[str, Any], fps: float) -> list[str]:
 # every output is BT.709 limited range and says so (Remotion's frames arrive as full-range
 # JPEG/BT.601; untagged or full-range files show shifted colors on phones)
 COLOR_TAGS = ["-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-color_range", "tv"]
-TO_BT709 = "scale=out_color_matrix=bt709:out_range=tv,format=yuv420p"
+# setparams: FFmpeg 7+ takes primaries/transfer from the frames, not from -color_* (left "unknown")
+TO_BT709 = ("scale=out_color_matrix=bt709:out_range=tv,format=yuv420p,"
+            "setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv")
 
 
 def audio_args(preset: dict[str, Any]) -> list[str]:
