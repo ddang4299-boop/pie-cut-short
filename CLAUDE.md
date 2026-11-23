@@ -258,7 +258,7 @@ Reference numbers for a mid-range GPU (e.g. RTX 3060); CPU being 3–5× slower 
 - [x] Phase 1 — Ingest + Transcribe + Library
 - [x] Phase 2 — Analyze + Moment proposals + Moments Review
 - [x] Phase 3 — Reframe + Clip Editor (partial: face tracking not yet checked on a real talking-head sample, see BLOCKED.md)
-- [ ] Phase 4 — Captions + Remotion
+- [x] Phase 4 — Captions + Remotion
 - [ ] Phase 5 — ElevenLabs
 - [ ] Phase 6 — Render + Export + CapCut
 - [ ] Phase 7 — Polish

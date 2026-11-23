@@ -185,3 +185,34 @@ Bỏ qua: không có thư mục `vendor/claude-shorts`. Nếu muốn dùng lại
 
 **Việc bạn nên làm khi thức dậy**
 - Thêm một video có người nói (2–5 phút) vào `samples/`, nhập vào, duyệt một khoảnh khắc rồi mở Trình chỉnh sửa để xem khung có bám mặt mượt không.
+
+## Phase 4 — Phụ đề + Remotion ✅
+
+**Đã làm được**
+- Dự án **Remotion** trong `remotion/`: một composition 1080×1920 nhận EDL (kiểm tra bằng Zod) và vẽ video nguồn đã cắt khung theo keyframe, phụ đề, câu mở đầu (mặc định 0–3,5 s) và thanh tiến trình ở dưới. Đã render thử 1 khung hình bằng Remotion CLI: chữ tiếng Việt in hoa vẫn đúng dấu (ĐẶC BIỆT, Đừng bỏ lỡ điều này).
+- 3 kiểu phụ đề, đều tô sáng từng từ theo thời gian nói (karaoke), font **Be Vietnam Pro**:
+  - **Bold**: IN HOA (in hoa theo tiếng Việt), viền đen dày, từ đang nói màu vàng, cả khối bật lên bằng spring.
+  - **Bounce**: từng từ nảy lên khi được nói, màu sắc xoay vòng.
+  - **Clean**: chữ thường tối giản, hiện dần.
+- `captions.py`: chia 1–4 từ mỗi khối (ngắt ở dấu câu, khoảng lặng > 0,6 s và chỗ cắt jump cut), xuất **SRT** (cho CapCut) và **ASS** (cho đường render dự phòng FFmpeg).
+- Trình chỉnh sửa clip:
+  - Xem trước 9:16 giờ dùng **@remotion/player** (chung composition với bản render), cập nhật ngay khi sửa.
+  - Thẻ **Phụ đề**: 3 thẻ kiểu có xem trước động, cỡ chữ, vị trí dọc (kéo trực tiếp đường nét đứt trên khung xem trước), số từ mỗi khối, danh sách khối phụ đề (sửa chữ, sửa thời gian, bấm để nhảy tới), bấm vào từ để nhấn mạnh, tìm và thay thế, tải file SRT.
+  - Thẻ **Câu mở đầu**: bật/tắt, nội dung, thời gian hiện/ẩn, vị trí.
+  - Thẻ **Xuất**: nền tảng, thanh tiến trình bật/tắt và màu. (Nút Render có ở Phase 6.)
+  - Track Phụ đề trên timeline hiện từng khối.
+- File `captions.srt` cạnh clip tự cập nhật mỗi lần lưu.
+
+**Kiểm thử**
+- pytest backend: **207/207 pass** (thêm 7 bài cho phụ đề: chia khối, jump cut, SRT, ASS, gộp từ, API).
+- Vitest: **51/51 pass** (bộ số liệu chung Python ↔ TypeScript cho cách chia khối).
+- `npm run build`: pass. Kiểm tra khoá en/vi: pass.
+- Smoke test: **80 kiểm tra pass**. Luồng mới: sửa chữ một khối thành "Đặc biệt quá" và một khối tiếng Anh → xem trước hiện đúng ở cả 3 kiểu (Bold in hoa đúng dấu) → nhấn mạnh từ → tìm/thay thế → kéo vị trí phụ đề → file SRT có nội dung mới → câu mở đầu hiện ở giây 0 → tiếng Việt không tràn ngang ở mọi thẻ.
+
+**Quyết định quan trọng** (chi tiết trong `DECISIONS.md`)
+- Xem trước kiểu "lai": video vẫn vẽ bằng canvas từ một thẻ video duy nhất, còn phụ đề / câu mở đầu / thanh tiến trình là Remotion Player trong suốt đặt lên trên. Như vậy không có hai bộ giải mã video bị lệch nhau, và lớp chữ chính là component dùng khi render.
+- Từ phụ đề lưu trong EDL theo thời gian của video gốc, nên cắt/ghép đoạn không làm mất chỗ bạn đã sửa.
+- Từ được nhấn mạnh thì to hơn thật (không dùng phóng bằng transform), để các từ không đè lên nhau.
+
+**Lưu ý**
+- Bản render thử dùng trình duyệt Edge có sẵn trên máy; Phase 6 sẽ chốt cách render đầy đủ.
