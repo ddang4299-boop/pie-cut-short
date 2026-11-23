@@ -172,6 +172,9 @@ def load_audio(path: Path, ffmpeg: str = "ffmpeg"):  # noqa: ANN201  (numpy arra
     return np.frombuffer(out, dtype=np.int16).astype(np.float32) / 32768.0
 
 
+BATCH_SIZE = 8  # CUDA batched inference; 16 was not faster on an 8 GB RTX 4060
+
+
 def _is_cuda_error(exc: BaseException) -> bool:
     text = str(exc).lower()
     return any(s in text for s in ("cuda", "cublas", "cudnn", "gpu", "out of memory", "no kernel image"))
@@ -184,15 +187,20 @@ def _load_model(model: str, device: str, models_dir: Path):  # noqa: ANN202
     return WhisperModel(model, device=device, compute_type=compute_type, download_root=str(models_dir))
 
 
-def _run_whisper(whisper_model, audio, language_option: str, emit: EmitFn) -> tuple[list[dict[str, Any]], Any]:  # noqa: ANN001
-    segments_iter, info = whisper_model.transcribe(
-        audio,
+def _run_whisper(whisper_model, audio, language_option: str, emit: EmitFn, *, batched: bool = False) -> tuple[list[dict[str, Any]], Any]:  # noqa: ANN001
+    kwargs: dict[str, Any] = dict(
         word_timestamps=True,
         vad_filter=True,
         beam_size=5,
         condition_on_previous_text=False,  # fewer repetition loops on long videos
         **whisper_language_args(language_option),
     )
+    if batched:  # VAD chunks decoded in parallel batches on the GPU
+        from faster_whisper import BatchedInferencePipeline
+
+        segments_iter, info = BatchedInferencePipeline(model=whisper_model).transcribe(audio, batch_size=BATCH_SIZE, **kwargs)
+    else:
+        segments_iter, info = whisper_model.transcribe(audio, **kwargs)
     emit({"event": "stage", "stage": "transcribing", "language": info.language})
     total = float(info.duration or 0) or 1.0
     segments: list[dict[str, Any]] = []
@@ -226,16 +234,31 @@ def transcribe_file(
         setup_cuda_dlls()
     emit({"event": "stage", "stage": "decoding_audio"})
     samples = load_audio(audio, ffmpeg)
-    devices = [device] if device == "cpu" else [device, "cpu"]
+    # GPU: batched first (about 3x faster, same accuracy), then sequential, then CPU
+    attempts = [("cpu", False)] if device == "cpu" else [(device, True), (device, False), ("cpu", False)]
+    models: dict[str, Any] = {}
+    broken: set[str] = set()  # devices where the model did not even load
+    timing: dict[str, Any] = {}
     last_exc: BaseException | None = None
-    for dev in devices:
+    for dev, batched in attempts:
+        if dev in broken:
+            continue
         try:
-            emit({"event": "stage", "stage": "loading_model", "model": model, "device": dev})
-            whisper_model = _load_model(model, dev, models_dir)
-            segments, info = _run_whisper(whisper_model, samples, language_option, emit)
+            if dev not in models:
+                emit({"event": "stage", "stage": "loading_model", "model": model, "device": dev})
+                t0 = time.monotonic()
+                try:
+                    models[dev] = _load_model(model, dev, models_dir)
+                except Exception:
+                    broken.add(dev)
+                    raise
+                timing["load_s"] = round(time.monotonic() - t0, 2)
+            t1 = time.monotonic()
+            segments, info = _run_whisper(models[dev], samples, language_option, emit, batched=batched)
+            timing.update(transcribe_s=round(time.monotonic() - t1, 2), batched=batched)
             if dev != device:
                 emit({"event": "warning", "code": "TRANSCRIBE_CPU_FALLBACK"})
-            return build_transcript(
+            transcript = build_transcript(
                 segments,
                 language=info.language,
                 language_option=language_option,
@@ -244,11 +267,16 @@ def transcribe_file(
                 device=dev,
                 duration=float(info.duration or 0),
             )
+            transcript["timing"] = timing
+            return transcript
         except Exception as exc:  # noqa: BLE001
             last_exc = exc
             if dev == "cpu" or not _is_cuda_error(exc):
                 raise
-            emit({"event": "log", "message": f"CUDA failed ({exc}); retrying on CPU"})
+            mode = "batched" if batched else "sequential"
+            emit({"event": "log", "message": f"CUDA failed ({mode}: {exc}); retrying"})
+            if not batched:
+                models.pop(dev, None)  # free the GPU memory before the CPU attempt
     assert last_exc is not None
     raise last_exc
 

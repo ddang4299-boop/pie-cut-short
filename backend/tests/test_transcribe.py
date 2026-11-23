@@ -81,3 +81,69 @@ def test_load_audio_reads_16k_mono_wav(tmp_path):
     audio = transcribe.load_audio(path)
     assert audio.dtype == np.float32 and audio.shape == (16000,)
     assert np.allclose(audio, samples / 32768.0)
+
+
+class _Info:
+    language = "en"
+    language_probability = 0.99
+    duration = 2.0
+
+
+def _fake_whisper(monkeypatch, *, load_fail=(), run_fail=()):
+    """Patch model loading and decoding; record the (device, batched) attempts."""
+    calls: list[tuple[str, bool]] = []
+    monkeypatch.setattr(transcribe, "setup_cuda_dlls", lambda: None)
+    monkeypatch.setattr(transcribe, "load_audio", lambda path, ffmpeg="ffmpeg": np.zeros(32000, dtype=np.float32))
+
+    def load(model, device, models_dir):
+        if device in load_fail:
+            raise RuntimeError("CUDA driver version is insufficient")
+        return device
+
+    def run(model, audio, language_option, emit, *, batched=False):
+        calls.append((model, batched))
+        if (model, batched) in run_fail:
+            raise RuntimeError("CUDA failed with error out of memory")
+        seg = {"start": 0.0, "end": 1.0, "text": "hi", "words": [{"start": 0.0, "end": 1.0, "text": "hi"}]}
+        return [seg], _Info()
+
+    monkeypatch.setattr(transcribe, "_load_model", load)
+    monkeypatch.setattr(transcribe, "_run_whisper", run)
+    return calls
+
+
+def _run(device="cuda"):
+    events: list[dict] = []
+    out = transcribe.transcribe_file(
+        "a.wav", model="tiny", device=device, language_option="auto", models_dir=".", emit=events.append,
+    )
+    return out, events
+
+
+def test_cuda_uses_batched_first(monkeypatch):
+    calls = _fake_whisper(monkeypatch)
+    out, events = _run()
+    assert calls == [("cuda", True)]
+    assert out["device"] == "cuda" and out["timing"]["batched"] is True
+    assert not any(e.get("code") == "TRANSCRIBE_CPU_FALLBACK" for e in events)
+
+
+def test_batched_cuda_error_retries_sequential_on_gpu(monkeypatch):
+    calls = _fake_whisper(monkeypatch, run_fail={("cuda", True)})
+    out, _ = _run()
+    assert calls == [("cuda", True), ("cuda", False)]
+    assert out["device"] == "cuda" and out["timing"]["batched"] is False
+
+
+def test_cuda_load_failure_goes_straight_to_cpu(monkeypatch):
+    calls = _fake_whisper(monkeypatch, load_fail={"cuda"})
+    out, events = _run()
+    assert calls == [("cpu", False)]
+    assert out["device"] == "cpu"
+    assert any(e.get("code") == "TRANSCRIBE_CPU_FALLBACK" for e in events)
+
+
+def test_cpu_never_batches(monkeypatch):
+    calls = _fake_whisper(monkeypatch)
+    out, _ = _run("cpu")
+    assert calls == [("cpu", False)] and out["timing"]["batched"] is False
