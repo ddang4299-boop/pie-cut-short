@@ -7,11 +7,11 @@
   --color-app: #000000;
   --color-panel: #0a0a0a;
   --color-elevated: #111111;
-  --color-line: rgb(255 255 255 / 0.09);
-  --color-line-strong: rgb(255 255 255 / 0.16);
+  --color-line: rgb(255 255 255 / 0.11);
+  --color-line-strong: rgb(255 255 255 / 0.2);
   --color-fg: #fafafa;
-  --color-muted: #a1a1aa;
-  --color-subtle: #71717a;
+  --color-muted: #b4b4bd;
+  --color-subtle: #8e8e98;
   --color-accent: #7c5cff;
   --color-success: #3ecf8e;
   --color-warning: #f5b544;

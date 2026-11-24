@@ -12,7 +12,7 @@ const tag = process.argv[2] ?? "now";
 const out = resolve("smoke-output/screens");
 mkdirSync(out, { recursive: true });
 
-const PAGES = ["library", "moments", "editor", "export", "settings"];
+const PAGES = ["library", "moments", "editor", "export", "settings", "guide"];
 const browser = await chromium.launch({ channel: CHANNEL, headless: true });
 const shots = {};
 try {
@@ -22,7 +22,7 @@ try {
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
     await page.goto(`${BASE}/library`);
-    await page.evaluate((l) => localStorage.setItem("shortforge.uiLanguage", l), lang);
+    await page.evaluate(([l, src]) => { localStorage.setItem("shortforge.uiLanguage", l); if (src) localStorage.setItem("shortforge.currentSource", src); }, [lang, process.env.SMOKE_SOURCE ?? ""]);
     for (const name of PAGES) {
       await page.goto(`${BASE}/${name}`);
       await page.waitForTimeout(1500);

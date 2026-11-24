@@ -250,7 +250,7 @@ export function ZoomTimeline({
           </>
         )}
       </div>
-      <div className="mt-1 flex h-4 items-center gap-3 text-[11px] text-muted">
+      <div className="mt-1 flex h-4 items-center gap-3 text-xs text-muted">
         {drag ? (
           <span className="font-mono">
             {formatTimecode(range.current.start)} → {formatTimecode(range.current.end)}

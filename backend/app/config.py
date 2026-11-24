@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     elevenlabs_api_key: str = ""
     elevenlabs_mock: bool = False  # ELEVENLABS_MOCK=1: offline fake client (tones), never calls the API
     llm_provider: str = "claude_code"
+    claude_bin: str = "claude"  # Claude Code CLI used by "Run with Claude" (claude -p /find-moments)
+    claude_model: str = ""  # optional --model for that run (e.g. "sonnet"); empty = your Claude Code default
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-opus-5-5"
     openai_api_key: str = ""

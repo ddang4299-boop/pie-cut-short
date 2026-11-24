@@ -825,7 +825,7 @@ function EditorWorkspace({ clipId }: { clipId: string }) {
               onGuide={onGuide}
             />
           </div>
-          <span className="truncate text-[11px] text-muted">
+          <span className="truncate text-xs text-muted">
             {t(`platform.${edl.platform}`)} · {edl.output.w}×{edl.output.h}
           </span>
         </div>

@@ -18,7 +18,7 @@ export function Header({ onOpenJobs }: { onOpenJobs: () => void }) {
       </span>
       <span className="h-6 w-px bg-line" aria-hidden />
       <div className="min-w-0 flex-1">
-        <div className="text-[11px] uppercase tracking-wide text-subtle">{t("header.current_source")}</div>
+        <div className="text-xs uppercase tracking-wide text-subtle">{t("header.current_source")}</div>
         <div
           className={`truncate text-sm ${currentSource ? "text-fg" : "text-muted"}`}
           data-testid="current-source"
@@ -53,7 +53,7 @@ export function Header({ onOpenJobs }: { onOpenJobs: () => void }) {
           <ListChecks className="size-4 text-muted" />
           {t("header.jobs")}
           <span
-            className={`min-w-5 rounded-full px-1.5 text-center font-mono text-[11px] ${
+            className={`min-w-5 rounded-full px-1.5 text-center font-mono text-xs ${
               runningJobs > 0 ? "bg-accent text-white shadow-[0_0_12px_rgba(124,92,255,0.6)]" : "bg-white/10 text-muted"
             }`}
           >

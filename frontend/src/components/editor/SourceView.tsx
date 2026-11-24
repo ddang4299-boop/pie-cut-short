@@ -159,7 +159,7 @@ export const SourceView = forwardRef<HTMLVideoElement, Props>(function SourceVie
                   onPointerMove={onMove}
                   onPointerUp={onUp}
                 >
-                  <span className={`absolute top-1 left-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-white ${panel === "top" ? "bg-accent" : "bg-success/90"}`}>
+                  <span className={`absolute top-1 left-1 rounded px-1.5 py-0.5 text-[11px] font-medium text-white ${panel === "top" ? "bg-accent" : "bg-success/90"}`}>
                     {t(`pages.editor.split_${panel}`)}
                   </span>
                   <span
@@ -176,7 +176,7 @@ export const SourceView = forwardRef<HTMLVideoElement, Props>(function SourceVie
               );
             })
           ) : crop.fit === "blur" ? (
-            <span className="absolute top-2 left-2 rounded bg-black/70 px-2 py-0.5 text-[11px] text-white">{t("pages.editor.fit_blur_note")}</span>
+            <span className="absolute top-2 left-2 rounded bg-black/70 px-2 py-0.5 text-xs text-white">{t("pages.editor.fit_blur_note")}</span>
           ) : (
             <div
               data-testid="crop-box"
@@ -194,7 +194,7 @@ export const SourceView = forwardRef<HTMLVideoElement, Props>(function SourceVie
                 if (next !== zoom) onZoomWheel(next);
               }}
             >
-              <span className="absolute top-1 left-1 rounded bg-accent px-1.5 py-0.5 font-mono text-[10px] text-white">{zoom.toFixed(2)}×</span>
+              <span className="absolute top-1 left-1 rounded bg-accent px-1.5 py-0.5 font-mono text-[11px] text-white">{zoom.toFixed(2)}×</span>
             </div>
           )}
         </div>

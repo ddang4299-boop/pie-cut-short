@@ -38,8 +38,8 @@ export function StepStepper({ source }: { source: Source }) {
                     />
                   )}
                 </div>
-                <div className={`mt-1.5 text-[11px] leading-tight [overflow-wrap:anywhere] ${style.text}`}>{t(`steps.${step}`)}</div>
-                <div className={`mt-0.5 text-[10px] ${running ? "font-mono text-accent" : "text-muted"}`}>{stateLabel}</div>
+                <div className={`mt-1.5 text-xs leading-tight [overflow-wrap:anywhere] ${style.text}`}>{t(`steps.${step}`)}</div>
+                <div className={`mt-0.5 text-[11px] ${running ? "font-mono text-accent" : "text-muted"}`}>{stateLabel}</div>
               </div>
             </Tooltip>
           </li>

@@ -23,7 +23,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from app import db, errors, moments_service, settings_store
+from app import claude_runner, db, errors, moments_service, settings_store
 from app.config import get_settings
 from app.jobs import JobCancelled, JobContext, JobQueue
 from app.models import (
@@ -743,3 +743,4 @@ def register_handlers(queue: JobQueue) -> None:
     queue.register("download", handle_download)
     queue.register(clips_service.CLIP_JOB, clips_service.handle_clip)
     render_service.register(queue)
+    queue.register(claude_runner.JOB_KIND, claude_runner.handle)

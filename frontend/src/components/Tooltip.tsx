@@ -37,11 +37,13 @@ export function Tooltip({
   label,
   shortcut,
   side = "bottom",
+  block = false,
   children,
 }: {
   label: string;
   shortcut?: string;
   side?: Side;
+  block?: boolean; // the anchor takes the full width (for full-width buttons)
   children: ReactNode;
 }) {
   const anchor = useRef<HTMLSpanElement>(null);
@@ -74,7 +76,7 @@ export function Tooltip({
   return (
     <span
       ref={anchor}
-      className="relative inline-flex"
+      className={block ? "relative flex w-full" : "relative inline-flex"}
       onMouseEnter={() => show(HOVER_DELAY)}
       onMouseLeave={hide}
       onFocus={(e) => {
@@ -103,7 +105,7 @@ export function Tooltip({
           >
             {label}
             {shortcut && (
-              <kbd className="ml-2 font-mono text-[11px] text-muted">
+              <kbd className="ml-2 font-mono text-xs text-muted">
                 {shortcut}
               </kbd>
             )}

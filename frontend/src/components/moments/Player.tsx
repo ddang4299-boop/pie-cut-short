@@ -48,7 +48,7 @@ export const Player = forwardRef<HTMLVideoElement, {
               />
             </>
           ) : (
-            <span className="absolute top-2 left-2 rounded bg-black/70 px-2 py-0.5 text-[11px] text-white">
+            <span className="absolute top-2 left-2 rounded bg-black/70 px-2 py-0.5 text-xs text-white">
               {t("pages.moments.already_vertical")}
             </span>
           )}

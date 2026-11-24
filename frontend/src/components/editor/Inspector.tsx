@@ -277,7 +277,7 @@ export function FramingTab({
               </Tooltip>
             }
           >
-            <div className="mb-1 grid grid-cols-[6rem_1fr_1fr_1fr_1.75rem] gap-1.5 px-1 text-[10px] text-muted uppercase">
+            <div className="mb-1 grid grid-cols-[6rem_1fr_1fr_1fr_1.75rem] gap-1.5 px-1 text-[11px] text-muted uppercase">
               <span>{t("pages.editor.kf_time")}</span>
               <span className="text-right">X</span>
               <span className="text-right">Y</span>

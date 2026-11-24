@@ -105,7 +105,7 @@ export const MomentCard = memo(function MomentCard({
             {title}
           </div>
           {moment.hook && <div className="mt-0.5 line-clamp-1 text-xs text-muted italic">“{moment.hook}”</div>}
-          <div className="mt-1 flex items-center gap-2 font-mono text-[11px] text-muted">
+          <div className="mt-1 flex items-center gap-2 font-mono text-xs text-muted">
             <span>{formatTimecode(moment.start)}</span>
             <span className="text-line">·</span>
             <span>{formatDuration(moment.end - moment.start)}</span>
@@ -174,7 +174,7 @@ export const MomentCard = memo(function MomentCard({
             <X className="size-4" />
           </button>
         </Tooltip>
-        <span className="ml-1 truncate text-[11px] text-muted">{t(`moment_status.${moment.status}`)}</span>
+        <span className="ml-1 truncate text-xs text-muted">{t(`moment_status.${moment.status}`)}</span>
         {manual && (
           <Tooltip label={t("pages.moments.delete")} side="top">
             <button

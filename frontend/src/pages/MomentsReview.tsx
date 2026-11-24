@@ -40,6 +40,7 @@ import {
   batchMoments,
   listMoments,
   patchMoment,
+  runClaudeNow,
   type Analysis,
   type ApiIssue,
   type Moment,
@@ -491,6 +492,20 @@ export default function MomentsReview() {
     }
   };
 
+  const runClaude = async () => {
+    if (!source) return;
+    setBusy(true);
+    try {
+      await runClaudeNow(source.id);
+      toast.show(t("pages.library.claude_started"), "success");
+    } catch (err) {
+      fail(err);
+    } finally {
+      setBusy(false);
+      void refresh();
+    }
+  };
+
   const copyCommand = async () => {
     if (!source) return;
     try {
@@ -747,20 +762,20 @@ export default function MomentsReview() {
                 aria-selected={filter === f}
                 data-testid={`filter-${f}`}
                 onClick={() => setFilter(f)}
-                className={`rounded-md px-2 py-1 text-[11px] ${filter === f ? "bg-accent text-white" : "text-muted hover:bg-white/5 hover:text-fg"}`}
+                className={`rounded-md px-2 py-1 text-xs ${filter === f ? "bg-accent text-white" : "text-muted hover:bg-white/5 hover:text-fg"}`}
               >
                 {t(`pages.moments.filter_${f}`)} <span className="font-mono opacity-75">{counts[f]}</span>
               </button>
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <label className="flex min-w-0 flex-1 items-center gap-1.5 text-[11px] text-muted">
+            <label className="flex min-w-0 flex-1 items-center gap-1.5 text-xs text-muted">
               {t("pages.moments.sort")}
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value as MomentSort)}
                 data-testid="sort-select"
-                className="min-w-0 flex-1 rounded-md border border-line bg-app px-1.5 py-1 text-[11px] text-fg outline-none"
+                className="min-w-0 flex-1 rounded-md border border-line bg-app px-1.5 py-1 text-xs text-fg outline-none"
               >
                 <option value="score">{t("pages.moments.sort_score")}</option>
                 <option value="time">{t("pages.moments.sort_time")}</option>
@@ -771,7 +786,7 @@ export default function MomentsReview() {
                 type="button"
                 data-testid="new-moment"
                 onClick={() => void createManual(time, time + 15)}
-                className="flex items-center gap-1 rounded-md border border-line px-2 py-1 text-[11px] hover:bg-white/5"
+                className="flex items-center gap-1 rounded-md border border-line px-2 py-1 text-xs hover:bg-white/5"
               >
                 <Plus className="size-3" />
                 {t("pages.moments.new_moment")}
@@ -794,24 +809,36 @@ export default function MomentsReview() {
                 <Hourglass className="size-3.5" />
                 {t("pages.library.waiting_title")}
               </div>
-              <p className="text-[11px] leading-relaxed text-muted">{t("pages.library.waiting_body")}</p>
+              <p className="text-xs leading-relaxed text-muted">{t("pages.library.waiting_body")}</p>
+              <Tooltip label={t("pages.library.run_claude_hint")} side="top" block>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void runClaude()}
+                  data-testid="moments-run-claude"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-md btn-primary px-3 py-1.5 text-xs font-medium disabled:opacity-50"
+                >
+                  <Sparkles className="size-3.5" />
+                  {t("pages.library.run_claude")}
+                </button>
+              </Tooltip>
               <button
                 type="button"
                 onClick={() => void copyCommand()}
-                className="flex w-full items-center justify-between gap-2 rounded-md border border-line bg-app px-2 py-1 font-mono text-[11px] hover:border-accent"
+                className="flex w-full items-center justify-between gap-2 rounded-md border border-line bg-app px-2 py-1 font-mono text-xs hover:border-accent"
               >
                 <span className="truncate">{source.find_moments_command}</span>
                 <Copy className="size-3 shrink-0" />
               </button>
-              {source.steps.moments?.error && <p className="text-[11px] text-danger">{translateIssue(t, source.steps.moments.error)}</p>}
+              {source.steps.moments?.error && <p className="text-xs text-danger">{translateIssue(t, source.steps.moments.error)}</p>}
             </div>
           )}
           {momentNotices.map((n) => (
-            <p key={n.code} className="rounded-md border border-line px-2.5 py-1.5 text-[11px] text-muted">
+            <p key={n.code} className="rounded-md border border-line px-2.5 py-1.5 text-xs text-muted">
               {translateIssue(t, n)}
             </p>
           ))}
-          {source.moments_notes && <p className="rounded-md border border-line px-2.5 py-1.5 text-[11px] text-muted">{source.moments_notes}</p>}
+          {source.moments_notes && <p className="rounded-md border border-line px-2.5 py-1.5 text-xs text-muted">{source.moments_notes}</p>}
           {visible.length === 0 && !waiting && (
             <div className="px-1 py-6 text-center text-xs text-muted" data-testid="moments-list-empty">
               {notReady ? t("pages.moments.not_ready") : moments.length ? t("pages.moments.filter_empty") : t("pages.moments.none_yet")}
@@ -867,7 +894,7 @@ export default function MomentsReview() {
                 aria-pressed={loop}
                 onClick={() => setLoop((v) => !v)}
                 data-testid="loop-toggle"
-                className={`flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] ${loop ? "border-accent text-accent" : "border-line text-muted"}`}
+                className={`flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${loop ? "border-accent text-accent" : "border-line text-muted"}`}
               >
                 <Repeat className="size-3.5" />
                 {t("pages.moments.loop_short")}
@@ -879,7 +906,7 @@ export default function MomentsReview() {
                 aria-pressed={preview916}
                 onClick={() => setPreview916((v) => !v)}
                 data-testid="preview916-toggle"
-                className={`flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] ${preview916 ? "border-accent text-accent" : "border-line text-muted"}`}
+                className={`flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${preview916 ? "border-accent text-accent" : "border-line text-muted"}`}
               >
                 <Smartphone className="size-3.5" />
                 {t("pages.moments.preview916")}
@@ -916,7 +943,7 @@ export default function MomentsReview() {
                   disabled={busy || source.active_job !== null || !source.has_transcript}
                   onClick={() => setFindOpen(true)}
                   data-testid="find-again"
-                  className="flex items-center gap-1 rounded-md border border-line px-2 py-1 text-[11px] text-muted hover:bg-white/5 hover:text-fg disabled:opacity-40"
+                  className="flex items-center gap-1 rounded-md border border-line px-2 py-1 text-xs text-muted hover:bg-white/5 hover:text-fg disabled:opacity-40"
                 >
                   <RotateCw className="size-3.5" />
                   {t("pages.moments.find_again")}
@@ -945,7 +972,7 @@ export default function MomentsReview() {
                 }}
               />
               <div className="grid grid-cols-[auto_auto_auto_minmax(0,1fr)] items-center gap-x-4 gap-y-2">
-                <label className="flex items-center gap-2 text-[11px] text-muted">
+                <label className="flex items-center gap-2 text-xs text-muted">
                   <Tooltip label={t("pages.moments.set_in")} shortcut="I" side="top">
                     <span>{t("pages.moments.in_point")}</span>
                   </Tooltip>
@@ -957,7 +984,7 @@ export default function MomentsReview() {
                     onChange={(v) => setRange(selected.id, v, selected.end)}
                   />
                 </label>
-                <label className="flex items-center gap-2 text-[11px] text-muted">
+                <label className="flex items-center gap-2 text-xs text-muted">
                   <Tooltip label={t("pages.moments.set_out")} shortcut="O" side="top">
                     <span>{t("pages.moments.out_point")}</span>
                   </Tooltip>
@@ -997,7 +1024,7 @@ export default function MomentsReview() {
 
         {/* bottom bar */}
         <div className="flex shrink-0 flex-wrap items-center gap-3 border-t border-line bg-panel px-4 py-2.5" data-testid="moments-bottom-bar">
-          <div className="flex items-center gap-1.5 text-[11px] text-muted">
+          <div className="flex items-center gap-1.5 text-xs text-muted">
             {t("pages.moments.caption_style")}
             <div className="flex rounded-md border border-line bg-app p-0.5" role="radiogroup" aria-label={t("pages.moments.caption_style")}>
               {CAPTION_STYLES.map((style) => (
@@ -1009,21 +1036,21 @@ export default function MomentsReview() {
                   disabled={!selected}
                   data-testid={`caption-${style}`}
                   onClick={() => selected && edit(selected.id, { caption_style: style })}
-                  className={`rounded px-2 py-0.5 text-[11px] ${selected?.caption_style === style ? "bg-accent text-white" : "text-muted hover:text-fg"} disabled:opacity-40`}
+                  className={`rounded px-2 py-0.5 text-xs ${selected?.caption_style === style ? "bg-accent text-white" : "text-muted hover:text-fg"} disabled:opacity-40`}
                 >
                   {t(`caption_style.${style}`)}
                 </button>
               ))}
             </div>
           </div>
-          <label className="flex items-center gap-1.5 text-[11px] text-muted">
+          <label className="flex items-center gap-1.5 text-xs text-muted">
             {t("pages.moments.platform")}
             <select
               value={selected?.platform ?? "youtube_shorts"}
               disabled={!selected}
               onChange={(e) => selected && edit(selected.id, { platform: e.target.value as Moment["platform"] })}
               data-testid="platform-select"
-              className="rounded-md border border-line bg-app px-1.5 py-1 text-[11px] text-fg outline-none disabled:opacity-40"
+              className="rounded-md border border-line bg-app px-1.5 py-1 text-xs text-fg outline-none disabled:opacity-40"
             >
               {PLATFORMS.map((p) => (
                 <option key={p} value={p}>
@@ -1051,7 +1078,7 @@ export default function MomentsReview() {
       <aside className="flex min-h-0 flex-col border-l border-line bg-panel/40">
         <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-2.5">
           <h2 className="text-xs font-semibold tracking-wide text-muted uppercase">{t("pages.moments.transcript")}</h2>
-          <span className="truncate text-[11px] text-muted">{t("pages.moments.select_to_create")}</span>
+          <span className="truncate text-xs text-muted">{t("pages.moments.select_to_create")}</span>
         </div>
         <div className="min-h-0 flex-1">
           <TranscriptPanel
@@ -1087,7 +1114,7 @@ function TextField({ label, value, onCommit, testId }: { label: string; value: s
     if (text.trim() !== value.trim()) onCommit(text.trim());
   };
   return (
-    <label className="col-span-2 flex min-w-0 items-center gap-2 text-[11px] text-muted">
+    <label className="col-span-2 flex min-w-0 items-center gap-2 text-xs text-muted">
       <span className="shrink-0">{label}</span>
       <input
         value={text}

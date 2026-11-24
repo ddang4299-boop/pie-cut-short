@@ -98,7 +98,7 @@ function PageRow({
       className={`rounded-lg border p-2 ${active ? "border-accent/70 bg-accent/10" : "border-line bg-app/40"}`}
     >
       <div className="mb-1.5 flex items-center gap-1.5">
-        <button type="button" onClick={() => onSeek(page.start)} className="shrink-0 rounded px-1 font-mono text-[11px] text-muted hover:bg-white/5 hover:text-fg" title={t("pages.moments.seek_here")}>
+        <button type="button" onClick={() => onSeek(page.start)} className="shrink-0 rounded px-1 font-mono text-xs text-muted hover:bg-white/5 hover:text-fg" title={t("pages.moments.seek_here")}>
           #{number}
         </button>
         <TimeField value={page.start} max={duration} label={t("pages.editor.block_start")} onChange={(v) => onTime(v, page.end)} className="w-[86px]" />
@@ -128,7 +128,7 @@ function PageRow({
             data-testid="emphasis-chip"
             title={t("pages.editor.emphasis_hint")}
             onClick={() => onEmphasis(w.index)}
-            className={`rounded px-1.5 py-0.5 text-[11px] ${w.emphasis ? "bg-accent text-white" : "bg-white/5 text-muted hover:text-fg"}`}
+            className={`rounded px-1.5 py-0.5 text-xs ${w.emphasis ? "bg-accent text-white" : "bg-white/5 text-muted hover:text-fg"}`}
             data-content
           >
             {w.text}
@@ -355,7 +355,7 @@ export function HookTab({ edl, duration, onHook }: { edl: Edl; duration: number;
           className={`${inputCls} resize-none`}
           data-content
         />
-        <p className="mt-1 text-right font-mono text-[11px] text-muted">{h.text.length}/200</p>
+        <p className="mt-1 text-right font-mono text-xs text-muted">{h.text.length}/200</p>
       </Section>
       <Section title={t("pages.editor.hook_timing")}>
         <Row label={t("pages.editor.hook_start")}>

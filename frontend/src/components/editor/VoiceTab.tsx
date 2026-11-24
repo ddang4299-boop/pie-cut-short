@@ -280,7 +280,7 @@ export function VoiceTab({
           className={`${inputCls} resize-y`}
           data-content
         />
-        <div className="mt-1 flex items-center justify-between gap-2 font-mono text-[11px]" data-testid="voice-estimate" data-credits={est?.credits_to_spend ?? ""} data-cached={est?.cached ? "1" : "0"}>
+        <div className="mt-1 flex items-center justify-between gap-2 font-mono text-xs" data-testid="voice-estimate" data-credits={est?.credits_to_spend ?? ""} data-cached={est?.cached ? "1" : "0"}>
           <span className={overLimit ? "text-danger" : "text-muted"}>
             {t("pages.editor.voice_chars", { chars: n(chars, i18n.language), max: n(est?.max_chars ?? model?.max_chars, i18n.language) })}
           </span>
@@ -337,7 +337,7 @@ export function VoiceTab({
           </select>
         </Row>
         {model && (
-          <p className="-mt-1 mb-2 text-right text-[11px] text-muted">
+          <p className="-mt-1 mb-2 text-right text-xs text-muted">
             {t("pages.editor.voice_model_rate", { rate: n(model.credits_per_char, i18n.language), max: n(model.max_chars, i18n.language) })}
           </p>
         )}

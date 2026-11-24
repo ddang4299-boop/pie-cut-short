@@ -101,7 +101,7 @@ export const TranscriptPanel = memo(function TranscriptPanel({
             className={`-mx-2 mb-1 rounded-md px-2 py-1 text-sm leading-relaxed ${inside ? "bg-accent/10" : ""}`}
           >
             <span
-              className="mr-2 cursor-pointer font-mono text-[10px] text-muted hover:text-fg"
+              className="mr-2 cursor-pointer font-mono text-[11px] text-muted hover:text-fg"
               onClick={() => onSeek(s.start)}
               title={t("pages.moments.seek_here")}
             >

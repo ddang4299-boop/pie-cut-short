@@ -32,7 +32,7 @@ export function BatchBar({
   const all = count > 0 && count === visibleIds.length;
   return (
     <div className="space-y-2 border-t border-line pt-2" data-testid="batch-bar">
-      <div className="flex items-center gap-2 text-[11px]">
+      <div className="flex items-center gap-2 text-xs">
         <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 text-muted">
           <input
             type="checkbox"
@@ -56,7 +56,7 @@ export function BatchBar({
               onChange={(e) => setChannel(e.target.value)}
               aria-label={t("pages.moments.batch_channel")}
               data-testid="batch-channel"
-              className="min-w-0 flex-1 basis-full rounded-md border border-line bg-app px-1.5 py-1 text-[11px] text-fg outline-none"
+              className="min-w-0 flex-1 basis-full rounded-md border border-line bg-app px-1.5 py-1 text-xs text-fg outline-none"
             >
               <option value="">{t("pages.moments.batch_no_channel")}</option>
               {channels.map((c) => (
@@ -72,7 +72,7 @@ export function BatchBar({
               disabled={busy}
               data-testid="batch-approve"
               onClick={() => onApply("approved", channel || null)}
-              className="flex flex-1 items-center justify-center gap-1 rounded-md bg-success/15 px-2 py-1 text-[11px] text-success hover:bg-success/25 disabled:opacity-40"
+              className="flex flex-1 items-center justify-center gap-1 rounded-md bg-success/15 px-2 py-1 text-xs text-success hover:bg-success/25 disabled:opacity-40"
             >
               <Check className="size-3" />
               {t("pages.moments.batch_approve", { count })}
@@ -84,7 +84,7 @@ export function BatchBar({
               disabled={busy}
               data-testid="batch-reject"
               onClick={() => onApply("rejected", null)}
-              className="flex flex-1 items-center justify-center gap-1 rounded-md bg-white/5 px-2 py-1 text-[11px] text-muted hover:bg-white/10 hover:text-fg disabled:opacity-40"
+              className="flex flex-1 items-center justify-center gap-1 rounded-md bg-white/5 px-2 py-1 text-xs text-muted hover:bg-white/10 hover:text-fg disabled:opacity-40"
             >
               <X className="size-3" />
               {t("pages.moments.batch_reject", { count })}

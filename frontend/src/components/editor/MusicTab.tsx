@@ -165,11 +165,11 @@ export function MusicTab({
                   <button type="button" className="min-w-0 flex-1 truncate text-left" onClick={() => use(track)} title={track.name} data-testid="music-track">
                     {track.name}
                   </button>
-                  <span className="shrink-0 font-mono text-[11px] text-muted">{formatDuration(track.duration)}</span>
+                  <span className="shrink-0 font-mono text-xs text-muted">{formatDuration(track.duration)}</span>
                   {active ? (
-                    <span className="shrink-0 text-[11px] text-accent">{t("pages.editor.music.in_use")}</span>
+                    <span className="shrink-0 text-xs text-accent">{t("pages.editor.music.in_use")}</span>
                   ) : (
-                    <button type="button" className="shrink-0 text-[11px] text-muted hover:text-fg" onClick={() => use(track)}>
+                    <button type="button" className="shrink-0 text-xs text-muted hover:text-fg" onClick={() => use(track)}>
                       {t("pages.editor.music.use")}
                     </button>
                   )}
@@ -188,7 +188,7 @@ export function MusicTab({
             })}
           </ul>
         )}
-        <p className="mt-2 text-[11px] text-subtle">{t("pages.editor.music.rights")}</p>
+        <p className="mt-2 text-xs text-subtle">{t("pages.editor.music.rights")}</p>
         <audio ref={preview} onEnded={() => setPlaying(null)} hidden />
       </Section>
 

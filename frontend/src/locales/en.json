@@ -9,7 +9,8 @@
     "moments": "Moments",
     "editor": "Editor",
     "export": "Export",
-    "settings": "Settings"
+    "settings": "Settings",
+    "guide": "Guide"
   },
   "header": {
     "current_source": "Current source",
@@ -49,7 +50,8 @@
     "attempt": "Attempt {{count}}",
     "kind_clip": "Clip framing",
     "kind_render": "Render",
-    "kind_capcut": "CapCut bundle"
+    "kind_capcut": "CapCut bundle",
+    "kind_claude_moments": "Claude finding moments"
   },
   "system": {
     "title": "System status",
@@ -150,7 +152,7 @@
       "deleted": "Source deleted.",
       "cancel_job": "Cancel processing",
       "waiting_title": "Waiting for /find-moments",
-      "waiting_body": "Run this command in Claude Code. The moments appear here automatically when Claude writes moments.json.",
+      "waiting_body": "Click Run with Claude, or run this command in Claude Code yourself. The moments appear here automatically when Claude writes moments.json.",
       "copy_command": "Copy command",
       "command_copied": "Command copied — paste it into Claude Code",
       "command_copy_failed": "Couldn't copy. Run this in Claude Code: {{command}}",
@@ -158,7 +160,12 @@
       "check_now_hint": "Look for moments.json right away",
       "find_offline": "Find offline",
       "find_offline_hint": "Use the built-in heuristic instead (no AI, lower quality)",
-      "content_type_auto": "{{type}} (auto)"
+      "content_type_auto": "{{type}} (auto)",
+      "run_claude": "Run with Claude",
+      "run_claude_hint": "Claude Code runs /find-moments for you in the background (uses your Claude plan)",
+      "claude_started": "Claude is reading the transcript. Moments appear here when it is done (a few minutes).",
+      "drop_hint_short": "MP4, MOV, MKV, WebM… checked right away",
+      "guide_link": "New here? Read the guide"
     },
     "moments": {
       "title": "Moments",
@@ -749,7 +756,10 @@
     "IMPORT_INVALID_FILE": "“{{name}}” is not a video file that can be read.",
     "OPEN_FOLDER_FAILED": "Could not open the folder.",
     "CHANNEL_NOT_FOUND": "That channel preset no longer exists.",
-    "CACHE_CLEAR_FAILED": "Some files are in use and were not deleted: {{detail}}. Try again later."
+    "CACHE_CLEAR_FAILED": "Some files are in use and were not deleted: {{detail}}. Try again later.",
+    "CLAUDE_CLI_NOT_FOUND": "Claude Code (the claude command) was not found. Install it, or copy the command and run it in Claude Code.",
+    "CLAUDE_NOT_WAITING": "This video is not waiting for moments right now.",
+    "CLAUDE_RUN_FAILED": "Claude could not finish finding moments: {{detail}}. Try again, or copy the command and run it in Claude Code."
   },
   "steps": {
     "preflight": "Preflight",
@@ -788,7 +798,8 @@
     "scenes": "Finding scene cuts",
     "content_type": "Detecting the content type",
     "proposing": "Choosing moments",
-    "importing": "Loading moments"
+    "importing": "Loading moments",
+    "claude_running": "Claude is choosing moments"
   },
   "source_status": {
     "downloading": "Downloading",
@@ -906,5 +917,103 @@
     "voice_generated": "Cost ElevenLabs credits and are used by clips.",
     "whisper_models": "Large downloads; delete them by hand in data/models if needed.",
     "outputs": "Your rendered clips and CapCut bundles."
+  },
+  "guide": {
+    "title": "User guide",
+    "subtitle": "Turn a long video into vertical shorts in four steps. Each step has its own page in the sidebar.",
+    "toc": "On this page",
+    "go_to": "Open {{page}}",
+    "step_label": "Step {{n}}",
+    "tip": "Tip",
+    "workflow_title": "How PieCut works",
+    "workflow": {
+      "library": "Add a long video. PieCut checks it, transcribes the speech and analyses it.",
+      "moments": "AI suggests the best moments. You approve, reject or adjust them.",
+      "editor": "Fine-tune each clip: framing, captions, hook, voice and music.",
+      "export": "Render the 9:16 MP4 and, if you like, a bundle for CapCut."
+    },
+    "import": {
+      "title": "Add a video",
+      "intro": "Everything starts on the Library page.",
+      "step1": "Drag a video file onto the drop zone, click Choose file, or paste a YouTube link / file path and press Import.",
+      "step2": "PieCut checks the file right away and shows green (OK), yellow (warnings) or red (problems).",
+      "step3": "Pick the spoken language if you know it, then press Start.",
+      "step4": "Follow the progress on the card: Check → Preview copy → Transcribe → Analyze → Moments.",
+      "tip": "A file path on this computer is used in place, nothing is copied. Very long videos are processed in parts automatically.",
+      "caption": "The Library: import area at the top, one card per video below."
+    },
+    "find": {
+      "title": "Let AI find the moments",
+      "intro": "When the card says “Waiting for /find-moments”, choose how the moments are picked.",
+      "step1": "Run with Claude (recommended): Claude reads the whole transcript in the background and picks 8–12 moments. Takes a few minutes.",
+      "step2": "Copy command: run /find-moments yourself in Claude Code if you prefer to watch it work.",
+      "step3": "Find offline: a fast built-in method without AI. Lower quality, but instant and free.",
+      "tip": "Run with Claude uses your own Claude login (your Pro plan), not a paid API key. Progress is shown in the Jobs drawer (top right).",
+      "caption": "A video waiting for moments: the white button runs Claude for you."
+    },
+    "review": {
+      "title": "Review the moments",
+      "intro": "Open Moments shows every suggestion with a score from 0 to 100.",
+      "step1": "Click a moment in the list to play it. The ring shows the score: green is strong, yellow is average.",
+      "step2": "Press A (✓) to approve or R (✕) to reject. Tick several cards to do it in one go.",
+      "step3": "Drag the in/out handles on the timeline to trim. Cuts snap to whole words (hold Alt to turn this off).",
+      "step4": "Select text in the transcript on the right and click Create moment to add your own.",
+      "step5": "Choose the caption style and platform at the bottom, then click Approve & open Editor.",
+      "tip": "Ctrl+Z / Ctrl+Y undo and redo every change on this page.",
+      "caption": "Moments: list on the left, player and timeline in the middle, transcript on the right."
+    },
+    "edit": {
+      "title": "Edit the clip",
+      "intro": "The Editor shows the 9:16 result on the left and the settings in tabs on the right.",
+      "step1": "Framing: follow the face or mouse cursor automatically, frame by hand with keyframes, or split the screen in two.",
+      "step2": "Captions: pick Bold, Bounce or Clean, change the size and position, fix any word directly in the list.",
+      "step3": "Hook: a short line of text shown in the first seconds to grab attention.",
+      "step4": "Voice: add an ElevenLabs voiceover (needs an API key; PieCut always asks before spending credits).",
+      "step5": "Audio and Music: original volume, loudness, background music with fades, looping and automatic ducking.",
+      "tip": "Everything saves automatically. Turn on the safe-zone overlay to keep text clear of TikTok / Shorts buttons.",
+      "caption": "The Editor: preview, source video with the crop box, and the settings tabs."
+    },
+    "export": {
+      "title": "Export",
+      "intro": "The Export page renders the final videos.",
+      "step1": "Click Render on a clip, or tick several and click Render all.",
+      "step2": "Watch progress, time left and the encoder used (NVIDIA GPU when available).",
+      "step3": "When it is done: play it, download the MP4 or open its folder.",
+      "step4": "Export for CapCut gives a folder with the clean video, captions (.srt), voice, music and step-by-step instructions.",
+      "tip": "Edited further in CapCut? Use Import edited version to bring the new MP4 back as the final.",
+      "caption": "Export: render queue at the top, finished clips below."
+    },
+    "settings": {
+      "title": "Settings",
+      "intro": "Settings apply to new work; nothing already done changes.",
+      "step1": "Interface language (EN / VI) – also switchable in the top right corner.",
+      "step2": "Who picks the moments (Claude Code, other AI services or offline), the speech model and the device (GPU / CPU).",
+      "step3": "Scoring weights, platform presets, default caption style, ElevenLabs status, cache size.",
+      "caption": "Settings."
+    },
+    "shortcuts": {
+      "title": "Keyboard shortcuts",
+      "intro": "Hover any button to see its shortcut.",
+      "space": "Play / pause",
+      "jkl": "Back / pause / forward",
+      "arrows": "One frame back / forward",
+      "shift_arrows": "One second back / forward",
+      "io": "Set in / out point",
+      "ar": "Approve / reject moment",
+      "updown": "Previous / next moment",
+      "undo": "Undo / redo",
+      "pages": "Switch pages (Alt+1 … Alt+6)"
+    },
+    "trouble": {
+      "title": "If something goes wrong",
+      "q1": "PieCut does not open",
+      "a1": "Look at data/logs/desktop.log and desktop_backend.log in the PieCut folder.",
+      "q2": "Run with Claude shows an error",
+      "a2": "Click it again, or use Copy command and run it in Claude Code to see what happens. The details are in the Jobs drawer.",
+      "q3": "A step failed on a video card",
+      "a3": "Click Retry on the card, or use the ⋯ menu → Re-run from step…",
+      "q4": "Rendering is slow",
+      "a4": "Without an NVIDIA GPU the video is encoded on the CPU, which is 3–5× slower. Shorter clips render faster."
+    }
   }
 }

@@ -40,7 +40,7 @@ export function JobLog({ jobId, live }: { jobId: number; live: boolean }) {
     <pre
       ref={ref}
       data-testid={`job-log-${jobId}`}
-      className="max-h-64 overflow-auto rounded-lg border border-line bg-app p-3 font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-all text-muted"
+      className="max-h-64 overflow-auto rounded-lg border border-line bg-app p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap break-all text-muted"
     >
       {error ?? (text === null ? t("common.loading") : text.trim() || t("jobs.log_empty"))}
     </pre>

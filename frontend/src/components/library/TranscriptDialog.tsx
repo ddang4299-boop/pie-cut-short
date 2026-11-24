@@ -144,7 +144,7 @@ export function TranscriptDialog({ source, onClose }: { source: Source; onClose:
                       <button
                         type="button"
                         onClick={() => seek(segment.start)}
-                        className="shrink-0 font-mono text-[11px] leading-7 text-muted hover:text-accent"
+                        className="shrink-0 font-mono text-xs leading-7 text-muted hover:text-accent"
                       >
                         {formatTimecode(segment.start)}
                       </button>

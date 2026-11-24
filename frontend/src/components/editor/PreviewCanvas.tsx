@@ -200,7 +200,7 @@ export function PreviewCanvas({
           }}
         >
           <div className="absolute top-1/2 right-0 left-0 border-t border-dashed border-accent/80 group-hover:border-accent" />
-          <span className="absolute top-1/2 right-1 -translate-y-1/2 rounded bg-accent px-1.5 py-px text-[10px] font-medium text-white">{g.label}</span>
+          <span className="absolute top-1/2 right-1 -translate-y-1/2 rounded bg-accent px-1.5 py-px text-[11px] font-medium text-white">{g.label}</span>
         </div>
       ))}
     </div>

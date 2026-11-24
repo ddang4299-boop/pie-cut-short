@@ -9,7 +9,8 @@
     "moments": "Khoảnh khắc",
     "editor": "Biên tập",
     "export": "Xuất video",
-    "settings": "Cài đặt"
+    "settings": "Cài đặt",
+    "guide": "Hướng dẫn"
   },
   "header": {
     "current_source": "Video nguồn hiện tại",
@@ -49,7 +50,8 @@
     "attempt": "Lần chạy thứ {{count}}",
     "kind_clip": "Căn khung clip",
     "kind_render": "Kết xuất video",
-    "kind_capcut": "Gói CapCut"
+    "kind_capcut": "Gói CapCut",
+    "kind_claude_moments": "Claude tìm khoảnh khắc"
   },
   "system": {
     "title": "Trạng thái hệ thống",
@@ -150,7 +152,7 @@
       "deleted": "Đã xoá video nguồn.",
       "cancel_job": "Dừng xử lý",
       "waiting_title": "Đang chờ /find-moments",
-      "waiting_body": "Chạy lệnh này trong Claude Code. Các khoảnh khắc sẽ tự hiện ở đây khi Claude ghi xong moments.json.",
+      "waiting_body": "Bấm Chạy bằng Claude, hoặc tự chạy lệnh này trong Claude Code. Các khoảnh khắc sẽ tự hiện ở đây khi Claude ghi xong moments.json.",
       "copy_command": "Sao chép lệnh",
       "command_copied": "Đã sao chép lệnh — dán vào Claude Code",
       "command_copy_failed": "Không sao chép được. Hãy chạy lệnh này trong Claude Code: {{command}}",
@@ -158,7 +160,12 @@
       "check_now_hint": "Tìm moments.json ngay bây giờ",
       "find_offline": "Tìm ngoại tuyến",
       "find_offline_hint": "Dùng thuật toán có sẵn thay thế (không dùng AI, chất lượng thấp hơn)",
-      "content_type_auto": "{{type}} (tự động)"
+      "content_type_auto": "{{type}} (tự động)",
+      "run_claude": "Chạy bằng Claude",
+      "run_claude_hint": "Claude Code tự chạy /find-moments ở chế độ nền (dùng gói Claude của bạn)",
+      "claude_started": "Claude đang đọc lời thoại. Khoảnh khắc sẽ hiện ở đây khi xong (vài phút).",
+      "drop_hint_short": "MP4, MOV, MKV, WebM… kiểm tra ngay",
+      "guide_link": "Mới dùng? Xem hướng dẫn"
     },
     "moments": {
       "title": "Khoảnh khắc",
@@ -749,7 +756,10 @@
     "IMPORT_INVALID_FILE": "“{{name}}” không phải tệp video đọc được.",
     "OPEN_FOLDER_FAILED": "Không mở được thư mục.",
     "CHANNEL_NOT_FOUND": "Preset kênh này không còn nữa.",
-    "CACHE_CLEAR_FAILED": "Một số file đang được dùng nên chưa xoá được: {{detail}}. Hãy thử lại sau."
+    "CACHE_CLEAR_FAILED": "Một số file đang được dùng nên chưa xoá được: {{detail}}. Hãy thử lại sau.",
+    "CLAUDE_CLI_NOT_FOUND": "Không tìm thấy Claude Code (lệnh claude). Hãy cài đặt, hoặc sao chép lệnh và chạy trong Claude Code.",
+    "CLAUDE_NOT_WAITING": "Video này hiện không chờ tìm khoảnh khắc.",
+    "CLAUDE_RUN_FAILED": "Claude chưa tìm xong khoảnh khắc: {{detail}}. Hãy thử lại, hoặc sao chép lệnh và chạy trong Claude Code."
   },
   "steps": {
     "preflight": "Kiểm tra",
@@ -788,7 +798,8 @@
     "scenes": "Đang tìm điểm chuyển cảnh",
     "content_type": "Đang nhận diện loại nội dung",
     "proposing": "Đang chọn khoảnh khắc",
-    "importing": "Đang tải khoảnh khắc"
+    "importing": "Đang tải khoảnh khắc",
+    "claude_running": "Claude đang chọn khoảnh khắc"
   },
   "source_status": {
     "downloading": "Đang tải về",
@@ -906,5 +917,103 @@
     "voice_generated": "Đã tốn credit ElevenLabs và đang được clip sử dụng.",
     "whisper_models": "File tải về rất lớn; nếu cần thì tự xoá trong data/models.",
     "outputs": "Các clip đã kết xuất và gói CapCut của bạn."
+  },
+  "guide": {
+    "title": "Hướng dẫn sử dụng",
+    "subtitle": "Biến video dài thành video ngắn dọc trong 4 bước. Mỗi bước là một trang trên thanh bên trái.",
+    "toc": "Nội dung",
+    "go_to": "Mở trang {{page}}",
+    "step_label": "Bước {{n}}",
+    "tip": "Mẹo",
+    "workflow_title": "PieCut hoạt động thế nào",
+    "workflow": {
+      "library": "Thêm video dài. PieCut kiểm tra, chép lời thoại và phân tích video.",
+      "moments": "AI đề xuất các khoảnh khắc hay. Bạn duyệt, loại hoặc chỉnh lại.",
+      "editor": "Chỉnh từng clip: khung hình, phụ đề, hook, giọng đọc và nhạc nền.",
+      "export": "Xuất video MP4 9:16 và, nếu muốn, bộ file để chỉnh tiếp trong CapCut."
+    },
+    "import": {
+      "title": "Thêm video",
+      "intro": "Mọi thứ bắt đầu ở trang Thư viện.",
+      "step1": "Kéo thả file video vào ô, bấm Chọn tệp, hoặc dán link YouTube / đường dẫn file rồi bấm Nhập.",
+      "step2": "PieCut kiểm tra file ngay và báo xanh (ổn), vàng (có cảnh báo) hoặc đỏ (có lỗi).",
+      "step3": "Chọn ngôn ngữ nói nếu bạn biết, rồi bấm Bắt đầu.",
+      "step4": "Theo dõi tiến độ trên thẻ: Kiểm tra → Bản xem trước → Chép lời → Phân tích → Khoảnh khắc.",
+      "tip": "Đường dẫn file trên máy được dùng trực tiếp, không sao chép. Video rất dài sẽ tự được chia phần để xử lý.",
+      "caption": "Thư viện: khu nhập video ở trên, mỗi video là một thẻ ở dưới."
+    },
+    "find": {
+      "title": "Để AI tìm khoảnh khắc",
+      "intro": "Khi thẻ báo “Đang chờ /find-moments”, chọn cách tìm khoảnh khắc.",
+      "step1": "Chạy bằng Claude (nên dùng): Claude đọc toàn bộ lời thoại ở chế độ nền và chọn 8–12 khoảnh khắc. Mất vài phút.",
+      "step2": "Sao chép lệnh: tự chạy /find-moments trong Claude Code nếu bạn muốn xem Claude làm việc.",
+      "step3": "Tìm ngoại tuyến: cách nhanh có sẵn, không dùng AI. Chất lượng thấp hơn nhưng tức thì và miễn phí.",
+      "tip": "Chạy bằng Claude dùng tài khoản Claude của bạn (gói Pro), không dùng API key trả phí. Xem tiến độ trong ngăn Tác vụ (góc trên bên phải).",
+      "caption": "Video đang chờ tìm khoảnh khắc: nút trắng sẽ chạy Claude giúp bạn."
+    },
+    "review": {
+      "title": "Duyệt khoảnh khắc",
+      "intro": "Trang Khoảnh khắc hiện mọi đề xuất kèm điểm từ 0 đến 100.",
+      "step1": "Bấm vào một khoảnh khắc trong danh sách để xem. Vòng tròn là điểm: xanh là tốt, vàng là trung bình.",
+      "step2": "Nhấn A (✓) để duyệt hoặc R (✕) để loại. Tick nhiều thẻ để xử lý một lần.",
+      "step3": "Kéo hai đầu trên timeline để cắt. Điểm cắt tự khớp vào ranh giới từ (giữ Alt để tắt).",
+      "step4": "Bôi đen lời thoại bên phải rồi bấm Tạo khoảnh khắc để tự thêm.",
+      "step5": "Chọn kiểu phụ đề và nền tảng ở dưới cùng, rồi bấm Duyệt & mở Trình biên tập.",
+      "tip": "Ctrl+Z / Ctrl+Y để hoàn tác và làm lại mọi thay đổi trên trang này.",
+      "caption": "Khoảnh khắc: danh sách bên trái, video và timeline ở giữa, lời thoại bên phải."
+    },
+    "edit": {
+      "title": "Biên tập clip",
+      "intro": "Trình biên tập hiện kết quả 9:16 bên trái và các tab cài đặt bên phải.",
+      "step1": "Khung hình: tự bám khuôn mặt hoặc con trỏ chuột, chỉnh tay bằng keyframe, hoặc chia đôi màn hình.",
+      "step2": "Phụ đề: chọn Đậm, Nảy hoặc Tối giản; đổi cỡ chữ, vị trí; sửa trực tiếp từng chữ trong danh sách.",
+      "step3": "Hook: dòng chữ ngắn hiện ở vài giây đầu để giữ người xem.",
+      "step4": "Giọng đọc: thêm lồng tiếng ElevenLabs (cần API key; PieCut luôn hỏi trước khi tốn credit).",
+      "step5": "Âm thanh và Nhạc nền: âm lượng gốc, độ lớn, nhạc nền có fade, lặp và tự giảm khi có giọng nói.",
+      "tip": "Mọi thay đổi được tự lưu. Bật lớp vùng an toàn để chữ không bị nút của TikTok / Shorts che.",
+      "caption": "Trình biên tập: bản xem trước, video gốc với khung cắt, và các tab cài đặt."
+    },
+    "export": {
+      "title": "Xuất video",
+      "intro": "Trang Xuất video render ra video hoàn chỉnh.",
+      "step1": "Bấm Render trên một clip, hoặc tick nhiều clip rồi bấm Render tất cả.",
+      "step2": "Theo dõi tiến độ, thời gian còn lại và bộ mã hoá đang dùng (GPU NVIDIA nếu có).",
+      "step3": "Xong thì phát thử, tải MP4 hoặc mở thư mục chứa file.",
+      "step4": "Xuất cho CapCut tạo một thư mục gồm video sạch, phụ đề (.srt), giọng đọc, nhạc và hướng dẫn từng bước.",
+      "tip": "Đã chỉnh thêm trong CapCut? Dùng Nhập bản đã sửa để đưa MP4 mới về làm bản cuối.",
+      "caption": "Xuất video: hàng đợi render ở trên, clip đã xong ở dưới."
+    },
+    "settings": {
+      "title": "Cài đặt",
+      "intro": "Cài đặt áp dụng cho việc mới; những gì đã làm không bị thay đổi.",
+      "step1": "Ngôn ngữ giao diện (EN / VI) – cũng đổi được ở góc trên bên phải.",
+      "step2": "Ai chọn khoảnh khắc (Claude Code, dịch vụ AI khác hoặc ngoại tuyến), mô hình nhận giọng nói và thiết bị (GPU / CPU).",
+      "step3": "Trọng số chấm điểm, cấu hình nền tảng, kiểu phụ đề mặc định, trạng thái ElevenLabs, dung lượng cache.",
+      "caption": "Cài đặt."
+    },
+    "shortcuts": {
+      "title": "Phím tắt",
+      "intro": "Rê chuột lên nút bất kỳ để xem phím tắt của nó.",
+      "space": "Phát / dừng",
+      "jkl": "Lùi / dừng / tới",
+      "arrows": "Lùi / tới 1 khung hình",
+      "shift_arrows": "Lùi / tới 1 giây",
+      "io": "Đặt điểm vào / ra",
+      "ar": "Duyệt / loại khoảnh khắc",
+      "updown": "Khoảnh khắc trước / sau",
+      "undo": "Hoàn tác / làm lại",
+      "pages": "Chuyển trang (Alt+1 … Alt+6)"
+    },
+    "trouble": {
+      "title": "Khi gặp sự cố",
+      "q1": "PieCut không mở được",
+      "a1": "Xem file data/logs/desktop.log và desktop_backend.log trong thư mục PieCut.",
+      "q2": "Chạy bằng Claude báo lỗi",
+      "a2": "Bấm lại, hoặc dùng Sao chép lệnh và chạy trong Claude Code để xem chuyện gì xảy ra. Chi tiết nằm trong ngăn Tác vụ.",
+      "q3": "Một bước trên thẻ video bị lỗi",
+      "a3": "Bấm Thử lại trên thẻ, hoặc dùng menu ⋯ → Chạy lại từ bước…",
+      "q4": "Render chậm",
+      "a4": "Không có GPU NVIDIA thì video được mã hoá bằng CPU, chậm hơn 3–5 lần. Clip ngắn render nhanh hơn."
+    }
   }
 }

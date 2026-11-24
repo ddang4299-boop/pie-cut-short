@@ -140,6 +140,11 @@ OPEN_FOLDER_FAILED = _register("OPEN_FOLDER_FAILED", W, 500)
 CHANNEL_NOT_FOUND = _register("CHANNEL_NOT_FOUND", E, 404)
 CACHE_CLEAR_FAILED = _register("CACHE_CLEAR_FAILED", W, 500, ("detail",))
 
+# --- Run /find-moments from the app ---------------------------------------------
+CLAUDE_CLI_NOT_FOUND = _register("CLAUDE_CLI_NOT_FOUND", E, 400)
+CLAUDE_NOT_WAITING = _register("CLAUDE_NOT_WAITING", E, 409)
+CLAUDE_RUN_FAILED = _register("CLAUDE_RUN_FAILED", E, 502, ("detail",))
+
 del E, W, I
 
 

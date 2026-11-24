@@ -31,7 +31,7 @@ from app.models import JOB_ACTIVE, JOB_CANCELLED, JOB_DONE, JOB_ERROR, JOB_QUEUE
 
 log = logging.getLogger("shortforge.jobs")
 
-LANES = ("main", "download", "edit", "render")
+LANES = ("main", "download", "edit", "render", "llm")
 PROGRESS_WRITE_INTERVAL = 0.5  # seconds
 TEMP_PATTERNS = ("*.tmp", "*.part", "*.tmp.*", "*.ytdl")
 MAX_ATTEMPTS = 3  # a job interrupted this many times is not resumed again

@@ -80,8 +80,9 @@ The frontend calls the backend through the Vite proxy at `/api/*`.
    Preflight → Preview copy (720p CFR proxy) → Transcribe → Analyze → Moments. The card menu has
    **Re-run from step…** and Delete.
 2. **Moments** — with the default `claude_code` provider the card says *Waiting for /find-moments*:
-   click **Copy command**, run `/find-moments <source_id>` in Claude Code in this folder, and the
-   moments appear by themselves. Review them (checkpoint 1): approve / reject (A / R), adjust in/out
+   click **Run with Claude** (the app runs `claude -p "/find-moments <source_id>"` in the background
+   with your Claude Code login; progress is in the Jobs drawer), or click **Copy command** and run it in
+   Claude Code yourself. Either way the moments appear by themselves. Review them (checkpoint 1): approve / reject (A / R), adjust in/out
    on the timeline (snaps to words; hold Alt to turn snapping off), create a moment from a transcript
    selection, pick the caption style and platform. Tick several cards to approve or reject them in
    one go, optionally applying a **channel preset**. Ctrl+Z / Ctrl+Y undo and redo.
@@ -93,6 +94,9 @@ The frontend calls the backend through the Vite proxy at `/api/*`.
    VideoToolbox / CPU); **Render selected** for many clips; per-clip log and Retry; download the MP4,
    **Export for CapCut** (bundle folder + zip with a bilingual README), and **Import edited version
    from CapCut** to bring a CapCut edit back as the final.
+
+The **Guide** page (sidebar, bottom; also linked from the Library header) walks through these steps with
+annotated screenshots, in English and Vietnamese.
 
 Everything autosaves. Closing the backend mid-job is safe: on restart, unfinished jobs resume from
 the unfinished step and temp files are removed.
@@ -138,6 +142,8 @@ powershell -File scripts\make_speech_sample.ps1                       # English 
 cd backend && ..\.venv\Scripts\python -m pipeline.preflight <video>  # preflight a file, prints JSON
 cd backend && ..\.venv\Scripts\python -m pipeline.ingest proxy <video> <out.mp4>   # make a 720p CFR proxy
 cd backend && ..\.venv\Scripts\python -m pipeline.transcribe <video> --out t.json --model small --models-dir ../data/models
+cd frontend && node scripts/guide_shots.mjs                            # regenerate the Guide screenshots (backend with demo data;
+                                                                      # GUIDE_URL, GUIDE_SOURCE, GUIDE_CLIP)
 cd remotion && npm run studio                                         # Remotion Studio for the caption composition
 ```
 

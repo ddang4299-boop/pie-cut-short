@@ -419,6 +419,8 @@ export const snapRange = (id: string, start: number, end: number) =>
 export const findMoments = (id: string, provider?: LlmProvider) =>
   apiSend<Source>("POST", `/sources/${id}/moments/find`, provider ? { provider } : {});
 export const importMomentsNow = (id: string) => apiSend<Source>("POST", `/sources/${id}/moments/import`);
+/** Run /find-moments in Claude Code (headless) from the app instead of typing it by hand. */
+export const runClaudeNow = (id: string) => apiSend<Source>("POST", `/sources/${id}/moments/claude`);
 export const getSettings = () => apiGet<AppSettings>("/settings");
 export const patchSettings = (body: Partial<Omit<AppSettings, "env" | "effective_llm_provider" | "effective" | "choices">>) => apiSend<AppSettings>("PATCH", "/settings", body);
 

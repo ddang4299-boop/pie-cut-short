@@ -62,7 +62,7 @@ export function Menu({
         >
           {sections.map((section, i) => (
             <div key={section.key} className={i > 0 ? "mt-1 border-t border-line pt-1" : undefined}>
-              {section.title && <div className="px-3 py-1 text-[11px] uppercase tracking-wide text-muted">{section.title}</div>}
+              {section.title && <div className="px-3 py-1 text-xs uppercase tracking-wide text-muted">{section.title}</div>}
               {section.items.map((item) => (
                 <button
                   key={item.key}

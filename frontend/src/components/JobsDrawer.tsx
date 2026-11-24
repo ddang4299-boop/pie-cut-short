@@ -41,15 +41,15 @@ function JobRow({ job }: { job: Job }) {
     <li className="border-b border-line px-5 py-3" data-testid="job-row" data-status={job.status}>
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium">{t(`jobs.kind_${job.kind}`, { defaultValue: job.kind })}</span>
-        <span className={`rounded px-1.5 py-0.5 text-[11px] ${STATUS_BADGE[job.status]}`}>{t(`job_status.${job.status}`)}</span>
-        <span className="ml-auto font-mono text-[11px] text-muted">#{job.id}</span>
+        <span className={`rounded px-1.5 py-0.5 text-xs ${STATUS_BADGE[job.status]}`}>{t(`job_status.${job.status}`)}</span>
+        <span className="ml-auto font-mono text-xs text-muted">#{job.id}</span>
       </div>
       <div className="mt-0.5 truncate text-xs text-muted" title={job.source_name ?? undefined}>
         {job.source_name ?? t("jobs.deleted_source")}
       </div>
       {active && (
         <>
-          <div className="mt-2 flex items-center justify-between text-[11px] text-muted">
+          <div className="mt-2 flex items-center justify-between text-xs text-muted">
             <span>{job.step ? t(`steps.${job.step}`, { defaultValue: job.step }) : t("job_status.queued")}</span>
             <span className="font-mono">{formatPercent(job.progress, locale)}</span>
           </div>
@@ -59,7 +59,7 @@ function JobRow({ job }: { job: Job }) {
         </>
       )}
       {job.status === "error" && job.error && <p className="mt-1.5 text-xs text-danger">{translateIssue(t, job.error)}</p>}
-      <div className="mt-2 flex items-center gap-2 text-[11px] text-muted">
+      <div className="mt-2 flex items-center gap-2 text-xs text-muted">
         <span>{formatDateTime(job.started_at ?? job.created_at, locale)}</span>
         {job.attempts > 1 && <span>· {t("jobs.attempt", { count: job.attempts })}</span>}
         <span className="ml-auto flex gap-1.5">
@@ -135,7 +135,7 @@ export function JobsDrawer({ open, onClose }: { open: boolean; onClose: () => vo
           <div className="flex-1 overflow-y-auto">
             {active.length > 0 && (
               <>
-                <h3 className="px-5 pt-4 pb-1 text-[11px] uppercase tracking-wide text-muted">{t("jobs.active")}</h3>
+                <h3 className="px-5 pt-4 pb-1 text-xs uppercase tracking-wide text-muted">{t("jobs.active")}</h3>
                 <ul>
                   {active.map((job) => (
                     <JobRow key={job.id} job={job} />
@@ -145,7 +145,7 @@ export function JobsDrawer({ open, onClose }: { open: boolean; onClose: () => vo
             )}
             {recent.length > 0 && (
               <>
-                <h3 className="px-5 pt-4 pb-1 text-[11px] uppercase tracking-wide text-muted">{t("jobs.recent")}</h3>
+                <h3 className="px-5 pt-4 pb-1 text-xs uppercase tracking-wide text-muted">{t("jobs.recent")}</h3>
                 <ul>
                   {recent.map((job) => (
                     <JobRow key={job.id} job={job} />

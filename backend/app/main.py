@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 from sqlmodel import col, select
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app import (cache_service, channels, clips_service, db, errors, jobs, moments_service, music_service,
+from app import (cache_service, channels, claude_runner, clips_service, db, errors, jobs, moments_service, music_service,
                  render_service, settings_store, tasks, voice_service)
 from app.config import APP_VERSION, get_settings
 from app.models import (
@@ -225,7 +225,7 @@ def source_out(src: Source, active_job: Job | None = None, moment_counts: dict[s
     }
 
 
-SOURCE_JOB_KINDS = ("pipeline", "download")  # clip jobs (editor) never make a source "busy"
+SOURCE_JOB_KINDS = ("pipeline", "download", claude_runner.JOB_KIND)  # clip jobs (editor) never make a source "busy"
 
 
 def _active_jobs_by_source() -> dict[str, Job]:
@@ -551,6 +551,14 @@ class FindBody(BaseModel):
 def find_moments(source_id: str, body: FindBody | None = None) -> dict[str, Any]:
     """(Re)propose moments: re-runs the moments step (claude_code writes a new request file)."""
     return rerun_source(source_id, RerunBody(from_step="moments", provider=(body or FindBody()).provider))
+
+
+@app.post("/sources/{source_id}/moments/claude")
+def run_claude_now(source_id: str) -> dict[str, Any]:
+    """Run /find-moments in Claude Code (headless, the user's own login) instead of typing it by hand."""
+    _ensure_idle(source_id)
+    claude_runner.enqueue(source_id)
+    return _source_response(source_id)
 
 
 @app.post("/sources/{source_id}/moments/import")

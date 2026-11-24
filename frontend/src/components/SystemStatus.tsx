@@ -101,7 +101,7 @@ export function SystemStatus() {
           <ul className="space-y-2">
             {data.issues.map((issue) => (
               <li key={issue.code} className="flex items-start gap-2 text-sm">
-                <span className={`shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium ${SEVERITY_BADGE[issue.severity]}`}>
+                <span className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-medium ${SEVERITY_BADGE[issue.severity]}`}>
                   {t(`severity.${issue.severity}`)}
                 </span>
                 <span>{translateIssue(t, issue)}</span>

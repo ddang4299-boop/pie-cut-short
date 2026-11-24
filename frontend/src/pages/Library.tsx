@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
+import { BookOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router";
 
 import { ImportPanel } from "../components/library/ImportPanel";
 import { SourceCard } from "../components/library/SourceCard";
@@ -13,6 +15,7 @@ import { useSources } from "../state/sources";
 /** Library: import (drop / choose / URL / path), preflight results, Start, source grid. */
 export default function Library() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { sources, jobs, loaded, error, refresh, uploads } = useSources();
   const [transcriptFor, setTranscriptFor] = useState<string | null>(null);
 
@@ -28,7 +31,21 @@ export default function Library() {
 
   return (
     <div className="mx-auto max-w-[1400px] p-6">
-      <PageHeader title={t("pages.library.title")} subtitle={t("pages.library.subtitle")} />
+      <PageHeader
+        title={t("pages.library.title")}
+        subtitle={t("pages.library.subtitle")}
+        actions={
+          <button
+            type="button"
+            onClick={() => navigate("/guide")}
+            data-testid="library-guide-link"
+            className="flex shrink-0 items-center gap-2 rounded-lg border border-line-strong px-3 py-1.5 text-sm text-fg hover:border-accent"
+          >
+            <BookOpen className="size-4 text-accent" />
+            {t("pages.library.guide_link")}
+          </button>
+        }
+      />
 
       <ImportPanel compact={sources.length > 0 || uploads.length > 0} />
 

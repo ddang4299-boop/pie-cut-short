@@ -8,6 +8,7 @@ import { PageErrorBoundary } from "./components/PageErrorBoundary";
 import { Sidebar } from "./components/Sidebar";
 import ClipEditor from "./pages/ClipEditor";
 import Export from "./pages/Export";
+import Guide from "./pages/Guide";
 import Library from "./pages/Library";
 import MomentsReview from "./pages/MomentsReview";
 import Settings from "./pages/Settings";
@@ -16,7 +17,7 @@ export default function App() {
   const [jobsOpen, setJobsOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Global shortcuts: Alt+1..5 switch pages, Esc closes the Jobs drawer.
+  // Global shortcuts: Alt+1..6 switch pages, Esc closes the Jobs drawer.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -52,6 +53,7 @@ export default function App() {
               <Route path="/editor" element={<ClipEditor />} />
               <Route path="/export" element={<Export />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/guide" element={<Guide />} />
               <Route path="*" element={<Navigate to="/library" replace />} />
             </Routes>
           </PageErrorBoundary>

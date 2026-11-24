@@ -16,6 +16,7 @@ import {
   importMomentsNow,
   patchSource,
   rerunSource,
+  runClaudeNow,
   startSource,
   type ContentType,
   type Job,
@@ -134,13 +135,13 @@ export function SourceCard({ source, lastJob, onOpenTranscript }: { source: Sour
             {t("pages.library.no_thumbnail")}
           </div>
         )}
-        <span className="absolute top-2 left-2 flex items-center gap-1.5 rounded-md bg-black/80 px-2 py-0.5 text-[11px] font-medium text-white">
+        <span className="absolute top-2 left-2 flex items-center gap-1.5 rounded-md bg-black/80 px-2 py-0.5 text-xs font-medium text-white">
           <span className={`size-1.5 rounded-full ${STATUS_DOT[source.status]}`} />
           {t(`source_status.${source.status}`)}
         </span>
         {source.duration != null && (
           <Tooltip label={t("pages.library.duration")} side="top">
-            <span className="absolute right-2 bottom-2 rounded bg-black/75 px-1.5 py-0.5 font-mono text-[11px] text-white">
+            <span className="absolute right-2 bottom-2 rounded bg-black/75 px-1.5 py-0.5 font-mono text-xs text-white">
               {formatDuration(source.duration)}
             </span>
           </Tooltip>
@@ -248,7 +249,7 @@ export function SourceCard({ source, lastJob, onOpenTranscript }: { source: Sour
                 type="button"
                 onClick={toggle}
                 data-testid="content-type-badge"
-                className={`flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] hover:bg-white/5 ${
+                className={`flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs hover:bg-white/5 ${
                   source.content_type ? "border-accent/40 text-fg" : "border-line text-muted"
                 }`}
               >
@@ -302,9 +303,21 @@ export function SourceCard({ source, lastJob, onOpenTranscript }: { source: Sour
               <Hourglass className="size-3.5 shrink-0" />
               {t("pages.library.waiting_title")}
             </div>
-            <p className="text-[11px] leading-relaxed text-muted">{t("pages.library.waiting_body")}</p>
+            <p className="text-xs leading-relaxed text-muted">{t("pages.library.waiting_body")}</p>
+            <Tooltip label={t("pages.library.run_claude_hint")} side="top" block>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void run(() => runClaudeNow(source.id), t("pages.library.claude_started"))}
+                data-testid="run-claude"
+                className="flex w-full items-center justify-center gap-1.5 rounded-md btn-primary px-3 py-1.5 text-xs font-medium disabled:opacity-50"
+              >
+                <Sparkles className="size-3.5" />
+                {t("pages.library.run_claude")}
+              </button>
+            </Tooltip>
             <div className="flex items-center gap-2">
-              <code className="min-w-0 flex-1 truncate rounded-md border border-line bg-app px-2 py-1 font-mono text-[11px] text-fg" data-testid="find-command">
+              <code className="min-w-0 flex-1 truncate rounded-md border border-line bg-app px-2 py-1 font-mono text-xs text-fg" data-testid="find-command">
                 {source.find_moments_command}
               </code>
               <Tooltip label={t("pages.library.copy_command")} side="top">
@@ -312,7 +325,7 @@ export function SourceCard({ source, lastJob, onOpenTranscript }: { source: Sour
                   type="button"
                   onClick={() => void copyCommand()}
                   data-testid="copy-command"
-                  className="flex shrink-0 items-center gap-1.5 rounded-md btn-primary px-2.5 py-1 text-[11px]"
+                  className="flex shrink-0 items-center gap-1.5 rounded-md border border-line px-2.5 py-1 text-xs text-fg hover:border-line-strong"
                 >
                   <Copy className="size-3" />
                   {t("pages.library.copy_command")}
@@ -320,7 +333,7 @@ export function SourceCard({ source, lastJob, onOpenTranscript }: { source: Sour
               </Tooltip>
             </div>
             {momentsStep?.error && (
-              <div className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/5 px-2 py-1.5 text-[11px]" data-testid="moments-error">
+              <div className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/5 px-2 py-1.5 text-xs" data-testid="moments-error">
                 <AlertTriangle className="mt-0.5 size-3 shrink-0 text-danger" />
                 <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">{translateIssue(t, momentsStep.error)}</span>
               </div>
@@ -331,7 +344,7 @@ export function SourceCard({ source, lastJob, onOpenTranscript }: { source: Sour
                   type="button"
                   disabled={busy}
                   onClick={() => void run(() => importMomentsNow(source.id))}
-                  className="text-[11px] text-muted underline-offset-2 hover:text-fg hover:underline disabled:opacity-50"
+                  className="text-xs text-muted underline-offset-2 hover:text-fg hover:underline disabled:opacity-50"
                 >
                   {t("pages.library.check_now")}
                 </button>
@@ -341,7 +354,7 @@ export function SourceCard({ source, lastJob, onOpenTranscript }: { source: Sour
                   type="button"
                   disabled={busy}
                   onClick={() => void run(() => findMoments(source.id, "heuristic"), t("pages.library.rerun_started"))}
-                  className="flex items-center gap-1 text-[11px] text-muted underline-offset-2 hover:text-fg hover:underline disabled:opacity-50"
+                  className="flex items-center gap-1 text-xs text-muted underline-offset-2 hover:text-fg hover:underline disabled:opacity-50"
                 >
                   <WandSparkles className="size-3" />
                   {t("pages.library.find_offline")}
@@ -371,7 +384,7 @@ export function SourceCard({ source, lastJob, onOpenTranscript }: { source: Sour
         {showStart && (
           <div className="space-y-2.5 rounded-lg border border-line bg-app/60 p-3" data-testid="start-panel">
             <div className="text-xs font-medium">{t("pages.library.start_title")}</div>
-            <label className="block text-[11px] text-muted">
+            <label className="block text-xs text-muted">
               {t("pages.library.language_label")}
               <select
                 value={language}
@@ -386,7 +399,7 @@ export function SourceCard({ source, lastJob, onOpenTranscript }: { source: Sour
                 ))}
               </select>
             </label>
-            <label className="block text-[11px] text-muted">
+            <label className="block text-xs text-muted">
               {t("pages.library.notes_label")}
               <textarea
                 value={notes}
@@ -479,7 +492,7 @@ export function SourceCard({ source, lastJob, onOpenTranscript }: { source: Sour
               </button>
             </Tooltip>
           )}
-          <span className="ml-auto flex items-center gap-1 text-[11px] text-muted" data-testid="moments-count">
+          <span className="ml-auto flex items-center gap-1 text-xs text-muted" data-testid="moments-count">
             <Sparkles className="size-3" />
             {t("pages.library.moments_count", { approved: source.moments.approved, total: source.moments.total })}
           </span>

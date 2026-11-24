@@ -143,7 +143,7 @@ export function EditorTimeline({
     <div className="flex h-full min-h-0 border-t border-line bg-panel" data-testid="editor-timeline">
       <div className="shrink-0 border-r border-line pt-6" style={{ width: LABEL_W }}>
         {tracks.map((tr) => (
-          <div key={tr} className="flex items-center truncate px-3 text-[11px] text-muted" style={{ height: TRACK_H }} title={t(`pages.editor.track.${tr}`)}>
+          <div key={tr} className="flex items-center truncate px-3 text-xs text-muted" style={{ height: TRACK_H }} title={t(`pages.editor.track.${tr}`)}>
             {t(`pages.editor.track.${tr}`)}
           </div>
         ))}
@@ -153,7 +153,7 @@ export function EditorTimeline({
           {/* ruler */}
           <div className="relative h-6 border-b border-line">
             {ticks.map((s) => (
-              <span key={s} className="absolute top-1 font-mono text-[10px] text-muted" style={{ left: x(s) }}>
+              <span key={s} className="absolute top-1 font-mono text-[11px] text-muted" style={{ left: x(s) }}>
                 <span className="absolute -top-1 left-0 h-1.5 w-px bg-line" />
                 &nbsp;{formatTimecode(s)}
               </span>
@@ -173,7 +173,7 @@ export function EditorTimeline({
                   onSelectSegment(selectedSegment === i ? null : i);
                   onSeek(offsets[i]);
                 }}
-                className={`absolute top-1 bottom-1 truncate rounded border px-1.5 text-left font-mono text-[10px] ${
+                className={`absolute top-1 bottom-1 truncate rounded border px-1.5 text-left font-mono text-[11px] ${
                   selectedSegment === i ? "border-accent bg-accent/30 text-fg" : "border-line bg-white/10 text-muted hover:bg-white/15"
                 }`}
                 style={{ left: x(offsets[i]) + 1, width: Math.max(4, (s.end - s.start) * scale - 2) }}
@@ -189,7 +189,7 @@ export function EditorTimeline({
               pages.map((p) => (
                 <div
                   key={`${p.words[0].index}-${p.words.length}`}
-                  className={`absolute top-1.5 bottom-1.5 truncate rounded border-l-2 px-1 text-[10px] leading-[16px] ${
+                  className={`absolute top-1.5 bottom-1.5 truncate rounded border-l-2 px-1 text-[11px] leading-[16px] ${
                     time >= p.start && time < p.show_end ? "border-accent bg-accent/30 text-fg" : "border-accent/60 bg-accent/10 text-muted"
                   }`}
                   style={{ left: x(p.start), width: Math.max(3, (p.show_end - p.start) * scale - 1) }}
@@ -204,7 +204,7 @@ export function EditorTimeline({
           <div className="relative border-t border-line/50" style={{ height: TRACK_H }}>
             {edl.hook_text.enabled && edl.hook_text.text && (
               <div
-                className="absolute top-1.5 bottom-1.5 truncate rounded bg-warning/25 px-1.5 text-[10px] leading-[18px] text-warning"
+                className="absolute top-1.5 bottom-1.5 truncate rounded bg-warning/25 px-1.5 text-[11px] leading-[18px] text-warning"
                 style={{ left: x(edl.hook_text.start), width: Math.max(4, (Math.min(duration, edl.hook_text.end) - edl.hook_text.start) * scale) }}
               >
                 {edl.hook_text.text}
@@ -253,7 +253,7 @@ export function EditorTimeline({
                   onVoiceStart(next, "move");
                   onVoiceStart(next, "end");
                 }}
-                className={`absolute top-1.5 bottom-1.5 cursor-ew-resize truncate rounded border select-none px-1.5 text-[10px] leading-[16px] outline-none focus:ring-1 focus:ring-success ${
+                className={`absolute top-1.5 bottom-1.5 cursor-ew-resize truncate rounded border select-none px-1.5 text-[11px] leading-[16px] outline-none focus:ring-1 focus:ring-success ${
                   vo.enabled ? "border-success/70 bg-success/20 text-success" : "border-line bg-white/5 text-muted line-through"
                 }`}
                 style={{ left: x(vo.start), width: Math.max(6, voDur * scale) }}
@@ -272,7 +272,7 @@ export function EditorTimeline({
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => onSeek(music.start)}
                 data-testid="music-block"
-                className={`absolute top-1.5 bottom-1.5 truncate rounded border px-1.5 text-left text-[10px] leading-[14px] ${
+                className={`absolute top-1.5 bottom-1.5 truncate rounded border px-1.5 text-left text-[11px] leading-[14px] ${
                   edl.music.enabled ? "border-accent/70 bg-accent/20 text-[#c4b5fd]" : "border-line bg-white/5 text-muted line-through"
                 }`}
                 style={{ left: x(music.start), width: Math.max(6, (music.end - music.start) * scale) }}

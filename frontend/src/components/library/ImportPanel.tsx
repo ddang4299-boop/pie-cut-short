@@ -75,7 +75,7 @@ export function ImportPanel({ compact }: { compact: boolean }) {
   };
 
   return (
-    <section className="mb-8 space-y-3">
+    <section className={compact ? "mb-8 grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] gap-3" : "mb-8 space-y-3"}>
       <div
         data-testid="drop-zone"
         data-dragging={dragging}
@@ -90,19 +90,23 @@ export function ImportPanel({ compact }: { compact: boolean }) {
           if (dragDepth.current === 0) setDragging(false);
         }}
         onDrop={onDrop}
-        className={`flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-8 text-center transition-colors ${
-          compact ? "py-8" : "py-14"
+        className={`flex items-center justify-center rounded-xl border-2 border-dashed transition-colors ${
+          compact ? "gap-4 px-5 py-4 text-left" : "flex-col gap-3 px-8 py-14 text-center"
         } ${dragging ? "border-accent bg-accent/5" : "border-line bg-panel/50"}`}
       >
-        <UploadIcon className={`size-10 ${dragging ? "text-accent" : "text-muted"}`} strokeWidth={1.5} />
-        <p className="text-base font-medium">{dragging ? t("pages.library.drop_active") : t("pages.library.drop")}</p>
-        <p className="max-w-2xl text-sm text-muted">{t("pages.library.drop_hint")}</p>
+        <UploadIcon className={`shrink-0 ${compact ? "size-7" : "size-10"} ${dragging ? "text-accent" : "text-muted"}`} strokeWidth={1.5} />
+        <div className={compact ? "min-w-0 flex-1" : "contents"}>
+          <p className={compact ? "text-sm font-medium" : "text-base font-medium"}>{dragging ? t("pages.library.drop_active") : t("pages.library.drop")}</p>
+          <p className={compact ? "mt-0.5 text-xs text-muted" : "max-w-2xl text-sm text-muted"}>
+            {compact ? t("pages.library.drop_hint_short") : t("pages.library.drop_hint")}
+          </p>
+        </div>
         <Tooltip label={t("pages.library.choose_file")} shortcut="Ctrl+O">
           <button
             type="button"
             onClick={() => fileInput.current?.click()}
             data-testid="choose-file"
-            className="mt-1 rounded-lg btn-primary px-4 py-2 text-sm"
+            className={`shrink-0 rounded-lg btn-primary px-4 py-2 text-sm ${compact ? "" : "mt-1"}`}
           >
             {t("pages.library.choose_file")}
           </button>
@@ -161,7 +165,7 @@ export function ImportPanel({ compact }: { compact: boolean }) {
       {uploads.map((item) => {
         const fraction = item.total ? item.loaded / item.total : 0;
         return (
-          <div key={item.key} className="rounded-xl border border-line bg-panel surface px-4 py-3" data-testid="upload-row">
+          <div key={item.key} className={`rounded-xl border border-line bg-panel surface px-4 py-3 ${compact ? "col-span-2" : ""}`} data-testid="upload-row">
             <div className="flex items-center gap-3 text-sm">
               <UploadIcon className="size-4 shrink-0 text-accent" />
               <span className="shrink-0 text-muted">{t("pages.library.uploading")}</span>

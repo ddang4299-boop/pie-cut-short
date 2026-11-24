@@ -423,7 +423,7 @@ function ClipRow({
           <span className={`text-xs ${stateColor}`} data-testid={`state-${clip.id}`}>
             {t(`render_state.${state}`)}
           </span>
-          {clip.files.imported && <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[11px] text-accent">{t("pages.export.imported")}</span>}
+          {clip.files.imported && <span className="rounded bg-accent/15 px-1.5 py-0.5 text-xs text-accent">{t("pages.export.imported")}</span>}
         </div>
         <p className="truncate text-xs text-muted">
           {source} · {formatDuration(clip.duration)} · {t(`platform.${clip.platform ?? "youtube_shorts"}`)}

@@ -68,7 +68,8 @@ async function libraryFlow() {
   await preflight.waitFor({ timeout: 30_000 });
   check(["ok", "warn"].includes(await preflight.getAttribute("data-level")), "uploaded sample passes preflight");
   check(await card.getByTestId("start-panel").isVisible(), "Start panel is shown; nothing runs before Start");
-  check((await page.getByTestId("current-source").innerText()).includes("speech_en_sample"), "header shows the current source");
+  const headerText = await page.getByTestId("current-source").innerText();
+  check(headerText.includes("speech_en_sample"), `header shows the current source ("${headerText}")`);
   await page.screenshot({ path: shot("en-library-preflight.png") });
 
   await card.getByTestId("language-select").selectOption("en");
